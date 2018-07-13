@@ -337,12 +337,17 @@ void inference(std::string image_path, std::string save_path)
     
     for(int i = 0; i < N; ++i)
     {
+        float* outdata = &networkOut[0] + i * INPUT_W * INPUT_H * INPUT_CHANNELS;
+        Mat position_map(INPUT_W, INPUT_H, CV_64FC3, outdata,CV_AUTOSTEP);
+        imwrite(save_path + ppm[i].fileName, position_map);
+        /*
         ppm = ppms[i];
         string filename = ppm.fileName;
         std::ofstream outfile(save_path + filename, std::ofstream::binary);
         assert(!outfile.fail());
         outfile << "Output save..." << "\n" << ppm.w << " " << ppm.h << "\n" << ppm.max << "\n";
         outfile.write(reinterpret_cast<char*>(ppm.buffer), ppm.w * ppm.h * 3);
+        */
     }
     
     /* we need to keep the memory created by the parser */
