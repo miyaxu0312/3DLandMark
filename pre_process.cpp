@@ -67,7 +67,7 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
     string  suffix = ".*.jpg";
     Mat img,similar_img;
     files = get_all_files(filePath, suffix);
-    for(int i=0;i<files.size();++i)
+    for(uint i=0;i<files.size();++i)
     {
         split_result = my_split(files[i],"/");
         string name = split_result[split_result.size()-1];
@@ -93,7 +93,8 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
         warpAffine(img, similar_img, affine_mat, similar_img.size());
         /*get the save name*/
         split_result = my_split(name,".");
-        string save_name = split_result[0]+".ppm";     
+        cout<<split_result[0];
+	string save_name = split_result[0]+".ppm";     
         /*save pre-processed image for the network*/
         imwrite(savePath+"/"+save_name,similar_img);
         cout<<"----------Pre-process Completed----------"<<endl;

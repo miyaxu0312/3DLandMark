@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <cublas_v2.h>
 #include <cuda_runtime_api.h>
 #include <fstream>
 #include <iostream>
@@ -19,20 +20,23 @@
 #include <unordered_map>
 #include <cassert>
 #include <vector>
+#include <cudnn.h>
 #include "NvInfer.h"
 #include "NvUffParser.h"
 #include "NvUtils.h"
 #include "utils.hpp"
-#include <opencv2/opencv.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
+//#include "BatchStreamPPM.h"
+//#include <opencv2/opencv.hpp>
+//#include <opencv2/core.hpp>
+//#include <opencv2/highgui/highgui.hpp>
 using namespace nvuffparser;
 using namespace nvinfer1;
+//using namespace cv;
 #include "common.h"
 #include "utils.hpp"
 
 static Logger gLogger;
-
+static samples_common::Args args;
 #define MAX_WORKSPACE (1_GB)
 
 #define RETURN_AND_LOG(ret, severity, message)                                              \
@@ -41,7 +45,8 @@ std::string error_message = "sample_uff_landmark: " + std::string(message);     
 gLogger.log(ILogger::Severity::k ## severity, error_message.c_str());               \
 return (ret);                                                                       \
 } while(0)
-void* createCudaBuffer(int64_t eltCount, DataType dtype, int run);
+/*
+void* createCudaBuffer(int64_t eltCount, nvinfer1::DataType dtype, int run);
 
 
 inline int64_t volume(const Dims& d)
@@ -51,6 +56,7 @@ inline int64_t volume(const Dims& d)
         v *= d.d[i];
     return v;
 }
+
 
 
 inline unsigned int elementSize(DataType t)
@@ -66,7 +72,7 @@ inline unsigned int elementSize(DataType t)
     assert(0);
     return 0;
 }
-
+*/
 static const int BatchSize = 1;
 static const int INPUT_H = 256;
 static const int INPUT_W = 256;
@@ -79,7 +85,7 @@ static const string INPUT_BLOB_NAME = "Placeholder";
 static const int OUTPUT_SIZE = BatchSize * INPUT_H * INPUT_W * INPUT_CHANNELS;
 
 template <int C, int H, int W>
-void readPPMFile(const std::string& filename, samples_common::PPM<C, H, W>& ppm)
+void readPPMFile(const std::string& filename, samples_common::PPM<INPUT_CHANNEL,INPUT_H, INPUT_W>& ppm)
 {
     ppm.fileName = filename;
     std::ifstream infile(locateFile(filename), std::ifstream::binary);
@@ -107,7 +113,7 @@ void* safeCudaMalloc(size_t memSize)
     return deviceMem;
 }
 
-
+std::vector<std::pair<int64_t, DataType>>
 calculateBindingBufferSizes(const ICudaEngine& engine, int nbBindings, int batchSize)
 {
     std::vector<std::pair<int64_t, DataType>> sizes;
@@ -130,7 +136,7 @@ void* createCudaBuffer(int64_t eltCount, DataType dtype, int run, bool isinput=f
     assert(eltCount == BatchSize * INPUT_H * INPUT_W * INPUT_CHANNELS);
     assert(elementSize(dtype) == sizeof(float));
     
-    size_t memSize = eltCount * elementSize(dtype);
+    size_t memSize = eltCount * samples_common::getElementSize(dtype);
     float* inputs = new float[eltCount];
     
     /* read jpg file */
@@ -225,7 +231,7 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
         {
             auto bufferSizesOutput = buffersSizes[i];
             //buffers[i] = createCudaBuffer(bufferSizesOutput.first, bufferSizesOutput.second, 1, false);
-            buffers[i] = safeCudaMalloc(bufferSizesOutput.first * elementSize(bufferSizesOutput.second));
+            buffers[i] = safeCudaMalloc(bufferSizesOutput.first * samples_common::getElementSize(bufferSizesOutput.second));
         }
     }
     
@@ -261,7 +267,7 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
     }
     /*get the output data*/
    
-    size_t memSize = bufferSizesOutput.first * elementSize(bufferSizesOutput.second)
+    size_t memSize = bufferSizesOutput.first * samples_common::getElementSize(bufferSizesOutput.second)
     CHECK(cudaMemcpyAsync(outputData, buffers[outputIndex], memSize, cudaMemcpyDeviceToHost));
     /*free space*/
     for (int bindingIdx = 0; bindingIdx < nbBindings; ++bindingIdx)
@@ -306,7 +312,7 @@ void inference(std::string image_path, std::string save_path)
     for(int i = 0;i < files.size(); ++i)
     {
         /*read image into buffer*/
-        readPPMFile(files[i], ppms[i]);
+        //readPPMFile(files[i], ppms[i]);
     }
     vector<float> data(N * INPUT_CHANNELS * INPUT_H * INPUT_W);
     
@@ -339,7 +345,7 @@ void inference(std::string image_path, std::string save_path)
     {
         float* outdata = &networkOut[0] + i * INPUT_W * INPUT_H * INPUT_CHANNELS;
         Mat position_map(INPUT_W, INPUT_H, CV_64FC3, outdata,CV_AUTOSTEP);
-        imwrite(save_path + ppm[i].fileName, position_map);
+        //cv::imwrite(save_path + ppm[i].fileName, position_map);
         /*
         ppm = ppms[i];
         string filename = ppm.fileName;
