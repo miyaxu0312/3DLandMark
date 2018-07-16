@@ -33,8 +33,8 @@ int main(int argc, const char * argv[]) {
     string uv_kpt_ind = "samples/landmark/landmark/uv_kpt_ind.txt";
     string savePath = "samples/landmark/landmark/crop_image";
     int resolution = 256;
+    /*pre-process the input image*/
     pre_process(ImagePath, boxPath, netOutPath, postPath, uv_kpt_ind, faceIndex, savePath, resolution);
-    //network output
     waitKey();
     return 0;
 }
