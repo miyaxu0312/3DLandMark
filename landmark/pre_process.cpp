@@ -32,6 +32,7 @@
 using namespace std;
 using namespace cv;
 
+/*get the face detection result from txt file*/
 vector<int> get_box(string path, string name)
 {
     vector<string> box;
@@ -84,22 +85,22 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
         float temp_dest[3][2] = {{0,0},{0,float(resolution-1)},{float(resolution-1), 0}};
         Mat destMat(3,2,CV_32F,temp_dest);
         Mat affine_mat = getAffineTransform(srcMat, destMat);
-
-        //string crop_path = "/Users/xyx/Desktop/landmark/landmark/crop";
-        //imwrite(crop_path+"/"+name,img);
         img = img/255.;
 
         Mat affine_mat_inv;
         invertAffineTransform(affine_mat, affine_mat_inv);
         
         warpAffine(img, similar_img, affine_mat, similar_img.size());
+        /*get the save name*/
         split_result = my_split(name,".");
-        string save_name = split_result[0]+".ppm";
+        string save_name = split_result[0]+".ppm";     
+        /*save pre-processed image for the network*/
         imwrite(savePath+"/"+save_name,similar_img);
         cout<<"----------Pre-process Completed----------"<<endl;
-        inference(savePath, netOutPath);
+        inference(savePath, netOutPath); //use tensorRT to get the pure postion map
         cout<<"----------Network Completed----------"<<endl;
-        //post_process(netOutPath, name, postPath,faceIndex, uv_kpt_ind, resolution, affine_mat, affine_mat_inv);
+        /*get landmark result*/
+        post_process(netOutPath, name, postPath,faceIndex, uv_kpt_ind, resolution, affine_mat, affine_mat_inv);
     }
     
 }
