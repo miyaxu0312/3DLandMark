@@ -30,12 +30,7 @@
 #include "NvCaffeParser.h"
 #include "NvInfer.h"
 using namespace nvuffparser;
-//using namespace std;
-//using namespace cv;
 using namespace nvinfer1;
-template <int C, int H, int W>
-void readPPMFile(const std::string& filename, samples_common::PPM<C, H, W>& ppm);
-string locateFile(const std::string& input);
 void* safeCudaMalloc(size_t memSize);
 void* createCudaBuffer(int64_t eltCount, nvinfer1::DataType dtype, int run, bool isinput=false);
 std::vector<std::pair<int64_t,nvinfer1::DataType>>
