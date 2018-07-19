@@ -47,34 +47,6 @@ static samples_common::Args args;
         return (ret);                                                                       \
     } while(0)
 
-/*
-void* createCudaBuffer(int64_t eltCount, nvinfer1::DataType dtype, int run);
-
-
-inline int64_t volume(const Dims& d)
-{
-    int64_t v = 1;
-    for (int64_t i = 0; i < d.nbDims; i++)
-        v *= d.d[i];
-    return v;
-}
-
-
-
-inline unsigned int elementSize(DataType t)
-{
-    switch (t)
-    {
-        case DataType::kINT32:
-            // Fallthrough, same as kFLOAT
-        case DataType::kFLOAT: return 4;
-        case DataType::kHALF: return 2;
-        case DataType::kINT8: return 1;
-    }
-    assert(0);
-    return 0;
-}
-*/
 static const int BatchSize = 1;
 static const int INPUT_H = 256;
 static const int INPUT_W = 256;
@@ -85,23 +57,6 @@ static const char*  OUTPUT_BLOB_NAME = "resfcn256/Conv2d_transpose_16/Sigmoid";
 static const char*  INPUT_BLOB_NAME = "Placeholder";
 
 static const int OUTPUT_SIZE = BatchSize * INPUT_H * INPUT_W * INPUT_CHANNELS;
-
-template <int C, int H, int W>
-void readPPMFile(const std::string& filename, samples_common::PPM<INPUT_CHANNELS, INPUT_H, INPUT_W>& ppm)
-{
-    ppm.fileName = filename;
-    std::ifstream infile(locateFile(filename), std::ifstream::binary);
-    infile >> ppm.magic >> ppm.w >> ppm.h >> ppm.max;
-    infile.seekg(1, infile.cur);
-    infile.read(reinterpret_cast<char*>(ppm.buffer), ppm.w * ppm.h * 3);
-}
-
-std::string locateFile(const std::string& input)
-{
-    std::vector<std::string> dirs{"data/landmark/", "data/samples/landmark/"};
-    return locateFile(input,dirs);
-}
-
 
 void* safeCudaMalloc(size_t memSize)
 {
@@ -206,9 +161,7 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
         else
         {
             auto bufferSizesOutput = buffersSizes[i];
-            //buffers[i] = createCudaBuffer(bufferSizesOutput.first, bufferSizesOutput.second, 1, false);
             buffers[i] = safeCudaMalloc(bufferSizesOutput.first * samples_common::getElementSize(bufferSizesOutput.second));
-            //memSize = bufferSizesOutput.first * samples_common::getElementSize(bufferSizesOutput.second);
 	}
 	
     }
@@ -223,7 +176,6 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
         for (int run = 0; run < run_num; run++)
         {
             /*create space for input and set the input data*/
-            //buffers[bindingIdxInput] = createMnistCudaBuffer(bufferSizesInput.first,bufferSizesInput.second, run, true);
             buffers[bindingIdxInput] = safeCudaMalloc(bufferSizesInput.first * samples_common::getElementSize(bufferSizesInput.second));
             CHECK(cudaMemcpyAsync(buffers[inputIndex], inputData, batchSize * INPUT_CHANNELS * INPUT_W * INPUT_H * sizeof(float), cudaMemcpyHostToDevice));
             auto t_start = std::chrono::high_resolution_clock::now();
@@ -244,8 +196,6 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
        }
     }
     /*get the output data*/
-   
-    //size_t memSize = bufferSizesOutput.first * samples_common::getElementSize(bufferSizesOutput.second);
     CHECK(cudaMemcpyAsync(outputData, buffers[outputIndex], memSize, cudaMemcpyDeviceToHost));
     /*free space*/
     for (int bindingIdx = 0; bindingIdx < nbBindings; ++bindingIdx)
@@ -283,7 +233,6 @@ int inference(std::string image_path, std::string save_path, cv::Mat img, std::s
     
     
     float* inputs = new float[BatchSize * INPUT_W * INPUT_H * INPUT_CHANNELS];
-    //std::vector<samples_common::PPM<INPUT_CHANNELS, INPUT_W, INPUT_H>> networkOut(N);
     /*read image from the folder*/
     vector<float> networkOut(N * INPUT_CHANNELS * INPUT_H * INPUT_W);
     vector<float> data;
@@ -292,25 +241,19 @@ int inference(std::string image_path, std::string save_path, cv::Mat img, std::s
 	std::cout<<"prepare data..."<<endl;
     for(int i = 0;i<1; ++i)
     {
-	
-    img.convertTo(img,CV_32FC3);
+	img.convertTo(img,CV_32FC3);
 	for(int c=0;c<=2;++c)
-        {
-            for(int row=0;row<INPUT_W;row++)
-            {
-			for(int col=0;col<INPUT_H;col++,++num)
-			{
-				data.push_back(img.at<Vec3f>(row,col)[c]);
-				//data.push_back(img.at<Vec3f>(row,col)[1]);
-			    //data.push_back(img.at<Vec3f>(row,col)[0]);
-				//cout<<data[num]<<",";
-			    //cout<<img.at<Vec3f>(row,col)[0]<<","<<img.at<Vec3f>(row,col)[1]<<","<<img.at<Vec3f>(row,col)[2]<<endl;
-			}
+	{
+	    for(int row=0;row<INPUT_W;row++)
+	    { 
+		for(int col=0;col<INPUT_H;col++,++num)
+		{
+		    data.push_back(img.at<Vec3f>(row,col)[c]);
 		}
- 
-        }
+	    }
+
+	}
     }
-	
 
     std::cout << " Data Size  " << data.size() << std::endl;
     std::cout<<"Data prepared..."<<endl;
@@ -333,36 +276,28 @@ int inference(std::string image_path, std::string save_path, cv::Mat img, std::s
         float* outdata=nullptr;
 		outdata =&networkOut[0];//+ i * INPUT_W * INPUT_H * INPUT_CHANNELS;
         vector<float> mydata;
-	//std::vector<samples_common::PPM<INPUT_CHANNELS, INPUT_W, INPUT_H>> pm(N);
-	    //pm = &networkOut[0];
-		for (int i=0;i<256*256*3;++i)
-		{
-
-			mydata.push_back(outdata[i]*256*1.1);
-		}
+	
+	for (int i=0;i<256*256*3;++i)
+	{
+	    mydata.push_back(outdata[i]*256*1.1);
+	}
 	Mat position_map(INPUT_W, INPUT_H, CV_32FC3);
 	int n=0;
-        	for(int row=0;row<256;row++)
-        	{
-            	
-				for(int col=0;col<256;col++)
-           	 	{
-					position_map.at<Vec3f>(row,col)[2]= mydata[n];++n;
-					position_map.at<Vec3f>(row,col)[1] = mydata[n];++n;
-					position_map.at<Vec3f>(row,col)[0] = mydata[n];++n;
-          	  	}
-       		 }
+	for(int row=0;row<256;row++)
+	{
 
-	
-        cv::imwrite(save_path + "/"+imgname, position_map);
-    
+	    for(int col=0;col<256;col++)
+	    {
+		position_map.at<Vec3f>(row,col)[2]= mydata[n];++n;
+		position_map.at<Vec3f>(row,col)[1] = mydata[n];++n;
+		position_map.at<Vec3f>(row,col)[0] = mydata[n];++n;
+	    }
+	 }
+	cv::imwrite(save_path + "/"+imgname, position_map);
     }
     
     /* we need to keep the memory created by the parser */
     parser->destroy();
-    
-    //execute(*engine);
     engine->destroy();
-    //shutdownProtobufLibrary();
     return 0;
 }
