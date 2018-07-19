@@ -19,9 +19,11 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include "pre_process.hpp"
+#include "post_process.hpp"
+#include "inference.hpp"
+
 using namespace std;
 using namespace cv;
-
 
 int main(int argc, const char * argv[]) {
     //读取图片文件夹下的jpg图片和box.txt中对应的裁剪框坐标，进行裁剪
@@ -32,9 +34,17 @@ int main(int argc, const char * argv[]) {
     string faceIndex = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/face_ind.txt";
     string uv_kpt_ind = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/uv_kpt_ind.txt";
     string savePath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/crop_image";
+    string pose_save = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/pose.txt";
     int resolution = 256;
+    int file_num = 6;
     /*pre-process the input image*/
-    pre_process(ImagePath, boxPath, netOutPath, postPath, uv_kpt_ind, faceIndex, savePath, resolution);
+    vector<Affine_Matrix> affine_matrix;
+    pre_process(ImagePath, boxPath, netOutPath, postPath, uv_kpt_ind, faceIndex, savePath, resolution, &affine_matrix);
+    cout<<"----------Pre-process Completed----------"<<endl;
+    //inference(savePath, netOutPath,similar_img,name); //use tensorRT
+    cout<<"----------Network Completed----------"<<endl;
+    post_process(ImagePath, netOutPath, postPath,faceIndex, uv_kpt_ind, resolution, &affine_matrix);
+    cout<<"----------Post-process Completed----------"<<endl;
    // waitKey();
     return 0;
 }

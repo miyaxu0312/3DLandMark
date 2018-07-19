@@ -38,5 +38,5 @@ calculateBindingBufferSizes(const ICudaEngine& engine, int nbBindings, int batch
 ICudaEngine* loadModelAndCreateEngine(const char* uffFile, int maxBatchsize, IUffParser* parser, IHostMemory*& trtModelStream);
 void doInference(IExecutionContext& context, float* inputData, float* outputData, int batchSize);
 void readImage(const std::string& filename, uint8_t* buffer);
-int inference(std::string image_path, std::string save_path, cv::Mat img, std::string name);
+int inference(std::string image_path, std::string save_path);
 #endif /* inference_hpp */

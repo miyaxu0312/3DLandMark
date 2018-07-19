@@ -23,6 +23,7 @@
 #include <cassert>
 #include <sstream>
 #include <vector>
+#include <map>
 #include "NvInfer.h"
 #include "NvUffParser.h"
 #include "common.h"
@@ -162,8 +163,7 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
         {
             auto bufferSizesOutput = buffersSizes[i];
             buffers[i] = safeCudaMalloc(bufferSizesOutput.first * samples_common::getElementSize(bufferSizesOutput.second));
-	}
-	
+    }
     }
     
     auto bufferSizesInput = buffersSizes[bindingIdxInput];
@@ -188,9 +188,7 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
                 if (engine.bindingIsInput(bindingIdx))
                     continue;
                 auto bufferSizesOutput = buffersSizes[bindingIdx];
-                //printOutput(bufferSizesOutput.first, bufferSizesOutput.second, buffers[bindingIdx]);
             }
-           
             total /= run_num;
             std::cout << "Average over " << run_num << " runs is " << total << " ms." << std::endl;
        }
@@ -205,11 +203,14 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
 
 
 
-int inference(std::string image_path, std::string save_path, cv::Mat img, std::string imgname)
+int inference(std::string image_path, std::string save_path)
 {
-    string  suffix = ".*.jpg";
-    
-    //vector<string> files = get_all_files(image_path, suffix);
+    vector<string> files;
+    vector<string> split_result;
+    string  suffix = ".*.jpg | .*.png";
+    std:map<int,string> img_name;
+    Mat img,similar_img;
+    string tmpname = " ";
     
     auto fileName = locateFile("face.pb.uff");
     std::cout << fileName << std::endl;
@@ -217,7 +218,7 @@ int inference(std::string image_path, std::string save_path, cv::Mat img, std::s
     auto parser = createUffParser();
   
     /* Register tensorflow input */
-    parser->registerInput(INPUT_BLOB_NAME, Dims3(3, 256, 256), UffInputOrder::kNCHW);
+    parser->registerInput(INPUT_BLOB_NAME, Dims3(INPUT_CHANNELS, INPUT_W, INPUT_h), UffInputOrder::kNCHW);
     parser->registerOutput(OUTPUT_BLOB_NAME);
     
     IHostMemory* trtModelStream{nullptr};
@@ -227,38 +228,38 @@ int inference(std::string image_path, std::string save_path, cv::Mat img, std::s
     if (!tmpengine)
         RETURN_AND_LOG(EXIT_FAILURE, ERROR, "Model load failed...");
     tmpengine->destroy();
-    /*N is the number of the image when batchsize=1*/
-    //files = get_all_files(image_path, suffix);
-    int N = 1;//files.size();
     
+    files = get_all_files(filePath, suffix);
+    int N = files.size();
     
-    float* inputs = new float[BatchSize * INPUT_W * INPUT_H * INPUT_CHANNELS];
     /*read image from the folder*/
     vector<float> networkOut(N * INPUT_CHANNELS * INPUT_H * INPUT_W);
     vector<float> data;
-    int num=0;
-    //Mat img(INPUT_W,INPUT_H,CV_8UC3);
+    int num = 0;
 	std::cout<<"prepare data..."<<endl;
-    for(int i = 0;i<1; ++i)
+    
+    for(int i = 0; i < N; ++i)
     {
-	img.convertTo(img,CV_32FC3);
-	for(int c=0;c<=2;++c)
-	{
-	    for(int row=0;row<INPUT_W;row++)
-	    { 
-		for(int col=0;col<INPUT_H;col++,++num)
-		{
-		    data.push_back(img.at<Vec3f>(row,col)[c]);
-		}
-	    }
-
-	}
+        img = imread(files[i], CV_LOAD_IMAGE_UNCHANGED);
+        img.convertTo(img,CV_32FC3);
+        split_result = my_split(files[i],"/");
+        tmpname = split_result[split_result.size()-1];
+        img_name.insert(pair<int, string>(i, tmpname));
+        for(int c=0; c<INPUT_CHANNELS; ++c)
+        {
+            for(int row=0; row<INPUT_W; row++)
+            {
+                for(int col=0; col<INPUT_H; col++, ++num)
+                {
+                    data.push_back(img.at<Vec3f>(row,col)[c]);
+                }
+            }
+        }
     }
 
-    std::cout << " Data Size  " << data.size() << std::endl;
-    std::cout<<"Data prepared..."<<endl;
-    
-    std::cout << "Model deserializing" << std::endl;
+    //std::cout << " Data Size  " << data.size() << std::endl;
+    //std::cout<<"Data prepared..."<<endl;
+    //std::cout << "Model deserializing" << std::endl;
     IRuntime* runtime = createInferRuntime(gLogger);
     assert(runtime != nullptr);
     ICudaEngine* engine = runtime->deserializeCudaEngine(trtModelStream->data(), trtModelStream->size(),nullptr);
@@ -269,31 +270,35 @@ int inference(std::string image_path, std::string save_path, cv::Mat img, std::s
     
     /*data should be flattened*/
     doInference(*context, &data[0], &networkOut[0], BatchSize);
-    std::cout<<"Inference uploaded..."<<endl;
+    //std::cout<<"Inference uploaded..."<<endl;
+    float* outdata=nullptr;
     
     for(int i = 0; i < N; ++i)
     {
-        float* outdata=nullptr;
-		outdata =&networkOut[0];//+ i * INPUT_W * INPUT_H * INPUT_CHANNELS;
+        Mat position_map(INPUT_W, INPUT_H, CV_32FC3);
+		outdata = &networkOut[0] + i * INPUT_W * INPUT_H * INPUT_CHANNELS;
         vector<float> mydata;
 	
-	for (int i=0;i<256*256*3;++i)
-	{
-	    mydata.push_back(outdata[i]*256*1.1);
-	}
-	Mat position_map(INPUT_W, INPUT_H, CV_32FC3);
-	int n=0;
-	for(int row=0;row<256;row++)
-	{
-
-	    for(int col=0;col<256;col++)
-	    {
-		position_map.at<Vec3f>(row,col)[2]= mydata[n];++n;
-		position_map.at<Vec3f>(row,col)[1] = mydata[n];++n;
-		position_map.at<Vec3f>(row,col)[0] = mydata[n];++n;
-	    }
-	 }
-	cv::imwrite(save_path + "/"+imgname, position_map);
+        for (int j=0; j<INPUT_W * INPUE_H * INPUT_CHANNELS; ++j)
+        {
+            mydata.push_back(outdata[j] * INPUT_W * 1.1);
+        }
+        
+        int n=0;
+        for(int row=0; row<INPUT_W; row++)
+        {
+            for(int col=0; col<INPUT_H; col++)
+            {
+                position_map.at<Vec3f>(row,col)[2] = mydata[n];
+                ++n;
+                position_map.at<Vec3f>(row,col)[1] = mydata[n];
+                ++n;
+                position_map.at<Vec3f>(row,col)[0] = mydata[n];
+                ++n;
+            }
+         }
+        tmpname = img_name.find(i);
+        cv::imwrite(save_path + "/"+ tmpname, position_map);
     }
     
     /* we need to keep the memory created by the parser */

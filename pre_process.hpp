@@ -16,5 +16,11 @@
 #include <opencv2/highgui/highgui.hpp>
 using namespace std;
 using namespace cv;
-void pre_process(string filePath, string boxPath, string netOutPath, string postPath, string uv_kpt_ind,string faceIndex, string savePath, int resolution);
+struct Affine_Matrix
+{
+    string name;
+    Mat affine_mat(2,3,CV_32F);
+};
+
+void pre_process(string ImagePath, string boxPath, string netOutPath, string postPath, string uv_kpt_ind, string faceIndex, string savePath, int resolution, vector<Affine_Matrix> &affine_matrix);
 #endif /* pre_process_hpp */
