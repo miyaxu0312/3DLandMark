@@ -6,45 +6,47 @@
 //  Copyright © 2018年 xuyixuan. All rights reserved.
 //
 
+
 #include "inference.hpp"
+#include "utils.hpp"
 #include <algorithm>
+#include <cublas_v2.h>
+#include <cudnn.h>
 #include <chrono>
 #include <cstdlib>
-#include <cublas_v2.h>
 #include <cuda_runtime_api.h>
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <numeric>
 #include <sys/stat.h>
 #include <unordered_map>
 #include <cassert>
+#include <sstream>
 #include <vector>
-#include <cudnn.h>
 #include "NvInfer.h"
 #include "NvUffParser.h"
+#include "common.h"
+#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include "NvUtils.h"
-#include "utils.hpp"
-//#include "BatchStreamPPM.h"
-//#include <opencv2/opencv.hpp>
-//#include <opencv2/core.hpp>
-//#include <opencv2/highgui/highgui.hpp>
+
 using namespace nvuffparser;
 using namespace nvinfer1;
-//using namespace cv;
-#include "common.h"
-#include "utils.hpp"
 
+using namespace std;
+#include "common.h"
 static Logger gLogger;
 static samples_common::Args args;
-#define MAX_WORKSPACE (1_GB)
+#define MAX_WORKSPACE (1<<30)
 
 #define RETURN_AND_LOG(ret, severity, message)                                              \
-do {                                                                                    \
-std::string error_message = "sample_uff_landmark: " + std::string(message);            \
-gLogger.log(ILogger::Severity::k ## severity, error_message.c_str());               \
-return (ret);                                                                       \
-} while(0)
+    do {                                                                                    \
+        std::string error_message = "sample_uff_landmark: " + std::string(message);            \
+        gLogger.log(ILogger::Severity::k ## severity, error_message.c_str());               \
+        return (ret);                                                                       \
+    } while(0)
+
 /*
 void* createCudaBuffer(int64_t eltCount, nvinfer1::DataType dtype, int run);
 
@@ -79,13 +81,13 @@ static const int INPUT_W = 256;
 static const int INPUT_CHANNELS = 3;
 static const int iteration = 1;
 static const int run_num = 1;
-static const string OUTPUT_BLOB_NAME = "resfcn256/Conv2d_transpose_16/Sigmoid";
-static const string INPUT_BLOB_NAME = "Placeholder";
+static const char*  OUTPUT_BLOB_NAME = "resfcn256/Conv2d_transpose_16/Sigmoid";
+static const char*  INPUT_BLOB_NAME = "Placeholder";
 
 static const int OUTPUT_SIZE = BatchSize * INPUT_H * INPUT_W * INPUT_CHANNELS;
 
 template <int C, int H, int W>
-void readPPMFile(const std::string& filename, samples_common::PPM<INPUT_CHANNEL,INPUT_H, INPUT_W>& ppm)
+void readPPMFile(const std::string& filename, samples_common::PPM<INPUT_CHANNELS, INPUT_H, INPUT_W>& ppm)
 {
     ppm.fileName = filename;
     std::ifstream infile(locateFile(filename), std::ifstream::binary);
@@ -113,16 +115,16 @@ void* safeCudaMalloc(size_t memSize)
     return deviceMem;
 }
 
-std::vector<std::pair<int64_t, DataType>>
+std::vector<std::pair<int64_t, nvinfer1::DataType>>
 calculateBindingBufferSizes(const ICudaEngine& engine, int nbBindings, int batchSize)
 {
-    std::vector<std::pair<int64_t, DataType>> sizes;
+    std::vector<std::pair<int64_t, nvinfer1::DataType>> sizes;
     for (int i = 0; i < nbBindings; ++i)
     {
         Dims dims = engine.getBindingDimensions(i);
-        DataType dtype = engine.getBindingDataType(i);
+        nvinfer1::DataType dtype = engine.getBindingDataType(i);
         
-        int64_t eltCount = volume(dims) * batchSize;
+        int64_t eltCount = samples_common::volume(dims) * batchSize;
         sizes.push_back(std::make_pair(eltCount, dtype));
     }
     
@@ -130,11 +132,11 @@ calculateBindingBufferSizes(const ICudaEngine& engine, int nbBindings, int batch
 }
 
 
-void* createCudaBuffer(int64_t eltCount, DataType dtype, int run, bool isinput=false)
+void* createCudaBuffer(int64_t eltCount, nvinfer1::DataType dtype, int run)
 {
     /* in that specific case, eltCount == INPUT_H * INPUT_W */
     assert(eltCount == BatchSize * INPUT_H * INPUT_W * INPUT_CHANNELS);
-    assert(elementSize(dtype) == sizeof(float));
+    assert(samples_common::getElementSize(dtype) == sizeof(float));
     
     size_t memSize = eltCount * samples_common::getElementSize(dtype);
     float* inputs = new float[eltCount];
@@ -146,46 +148,19 @@ void* createCudaBuffer(int64_t eltCount, DataType dtype, int run, bool isinput=f
     
     /* initialize the inputs buffer */
     for (int i = 0; i < eltCount; i++)
-        inputs[i] = float(fileData[i]) / 255.0;
+        inputs[i] = float(fileData[i]) / 255.;
     
     void* deviceMem = safeCudaMalloc(memSize);
-    if (isinput)
-    {
-        CHECK(cudaMemcpy(deviceMem, inputs, memSize, cudaMemcpyHostToDevice));
-        delete[] inputs;
-    }
+   
+    
+    CHECK(cudaMemcpy(deviceMem, inputs, memSize, cudaMemcpyHostToDevice));
+    delete[] inputs;
+    
     
     return deviceMem;
 }
 
-/*
-void printOutput(int64_t eltCount, DataType dtype, void* buffer)
-{
-    std::cout << eltCount << " eltCount" << std::endl;
-    assert(elementSize(dtype) == sizeof(float));
-    std::cout << "--- OUTPUT ---" << std::endl;
-    
-    size_t memSize = eltCount * elementSize(dtype);
-    float* outputs = new float[eltCount];
-    CHECK(cudaMemcpy(outputs, buffer, memSize, cudaMemcpyDeviceToHost));
-    
-    int maxIdx = 0;
-    for (int i = 0; i < eltCount; ++i)
-        if (outputs[i] > outputs[maxIdx])
-            maxIdx = i;
-    eltCount = 10;
-    for (int64_t eltIdx = 0; eltIdx < eltCount; ++eltIdx)
-    {
-        std::cout << eltIdx << " => " << outputs[eltIdx] << "\t : ";
-        if (eltIdx == maxIdx)
-            std::cout << "***";
-        std::cout << "\n";
-    }
-    
-    std::cout << std::endl;
-    delete[] outputs;
-}
-*/
+
 
 ICudaEngine* loadModelAndCreateEngine(const char* uffFile, int maxBatchSize,
                                       IUffParser* parser, IHostMemory*& trtModelStream)
@@ -220,8 +195,9 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
     const ICudaEngine& engine = context.getEngine();
     int nbBindings = engine.getNbBindings();
     /*point to the input and output node*/
+    size_t memSize =256*256*3*sizeof(float);
     std::vector<void*> buffers(nbBindings);
-    std::vector<std::pair<int64_t, DataType>> buffersSizes = calculateBindingBufferSizes(engine, nbBindings, batchSize);
+    std::vector<std::pair<int64_t, nvinfer1::DataType>> buffersSizes = calculateBindingBufferSizes(engine, nbBindings, batchSize);
     int bindingIdxInput = 0;
     for (int i = 0; i < nbBindings; ++i)
     {
@@ -232,7 +208,9 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
             auto bufferSizesOutput = buffersSizes[i];
             //buffers[i] = createCudaBuffer(bufferSizesOutput.first, bufferSizesOutput.second, 1, false);
             buffers[i] = safeCudaMalloc(bufferSizesOutput.first * samples_common::getElementSize(bufferSizesOutput.second));
-        }
+            //memSize = bufferSizesOutput.first * samples_common::getElementSize(bufferSizesOutput.second);
+	}
+	
     }
     
     auto bufferSizesInput = buffersSizes[bindingIdxInput];
@@ -246,10 +224,10 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
         {
             /*create space for input and set the input data*/
             //buffers[bindingIdxInput] = createMnistCudaBuffer(bufferSizesInput.first,bufferSizesInput.second, run, true);
-            buffers[bindingIdxInput] = safeCudaMalloc(bufferSizesInput.first * elementSize(bufferSizesInput.second));
+            buffers[bindingIdxInput] = safeCudaMalloc(bufferSizesInput.first * samples_common::getElementSize(bufferSizesInput.second));
             CHECK(cudaMemcpyAsync(buffers[inputIndex], inputData, batchSize * INPUT_CHANNELS * INPUT_W * INPUT_H * sizeof(float), cudaMemcpyHostToDevice));
             auto t_start = std::chrono::high_resolution_clock::now();
-            context->execute(batchSize, &buffers[0]);
+            context.execute(batchSize, &buffers[0]);
             auto t_end = std::chrono::high_resolution_clock::now();
             ms = std::chrono::duration<float, std::milli>(t_end - t_start).count();
             total += ms;
@@ -260,14 +238,14 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
                 auto bufferSizesOutput = buffersSizes[bindingIdx];
                 //printOutput(bufferSizesOutput.first, bufferSizesOutput.second, buffers[bindingIdx]);
             }
-            
+           
             total /= run_num;
             std::cout << "Average over " << run_num << " runs is " << total << " ms." << std::endl;
-        }
+       }
     }
     /*get the output data*/
    
-    size_t memSize = bufferSizesOutput.first * samples_common::getElementSize(bufferSizesOutput.second)
+    //size_t memSize = bufferSizesOutput.first * samples_common::getElementSize(bufferSizesOutput.second);
     CHECK(cudaMemcpyAsync(outputData, buffers[outputIndex], memSize, cudaMemcpyDeviceToHost));
     /*free space*/
     for (int bindingIdx = 0; bindingIdx < nbBindings; ++bindingIdx)
@@ -277,89 +255,114 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
 
 
 
-void inference(std::string image_path, std::string save_path)
+int inference(std::string image_path, std::string save_path, cv::Mat img, std::string imgname)
 {
-    string  suffix = ".*.ppm";
-    Mat img,similar_img;
-    files = get_all_files(filePath, suffix);
+    string  suffix = ".*.jpg";
+    
+    //vector<string> files = get_all_files(image_path, suffix);
     
     auto fileName = locateFile("face.pb.uff");
     std::cout << fileName << std::endl;
     
     auto parser = createUffParser();
-    
+  
     /* Register tensorflow input */
     parser->registerInput(INPUT_BLOB_NAME, Dims3(3, 256, 256), UffInputOrder::kNCHW);
     parser->registerOutput(OUTPUT_BLOB_NAME);
     
     IHostMemory* trtModelStream{nullptr};
-    ICudaEngine* engine = loadModelAndCreateEngine(fileName.c_str(), BatchSize, parser,trtModelStream);
+    ICudaEngine* tmpengine = loadModelAndCreateEngine(fileName.c_str(), BatchSize, parser,trtModelStream);
     
-    assert(trtModelStream != nullptr)
-    if (!engine)
+    assert(trtModelStream != nullptr);
+    if (!tmpengine)
         RETURN_AND_LOG(EXIT_FAILURE, ERROR, "Model load failed...");
-    
+    tmpengine->destroy();
     /*N is the number of the image when batchsize=1*/
-    files = get_all_files(image_path, suffix);
-    int N = files.size();
+    //files = get_all_files(image_path, suffix);
+    int N = 1;//files.size();
     
-    std::vector<samples_common::PPM<INPUT_CHANNELS, INPUT_W, INPUT_H>> ppms(N);
-    samples_common::PPM<INPUT_CHANNELS, INPUT_W, INPUT_H> ppm;
+    
     float* inputs = new float[BatchSize * INPUT_W * INPUT_H * INPUT_CHANNELS];
-    std::vector<samples_common::networkOut<INPUT_CHANNELS, INPUT_W, INPUT_H>> networkOut(N);
+    //std::vector<samples_common::PPM<INPUT_CHANNELS, INPUT_W, INPUT_H>> networkOut(N);
     /*read image from the folder*/
-    
-    for(int i = 0;i < files.size(); ++i)
+    vector<float> networkOut(N * INPUT_CHANNELS * INPUT_H * INPUT_W);
+    vector<float> data;
+    int num=0;
+    //Mat img(INPUT_W,INPUT_H,CV_8UC3);
+	std::cout<<"prepare data..."<<endl;
+    for(int i = 0;i<1; ++i)
     {
-        /*read image into buffer*/
-        //readPPMFile(files[i], ppms[i]);
-    }
-    vector<float> data(N * INPUT_CHANNELS * INPUT_H * INPUT_W);
-    
-    for (int i = 0, volImg = INPUT_CHANNELS * INPUT_H * INPUT_W; i < N; ++i)
-    {
-        for (int c = 0; c < INPUT_CHANNELS; ++c)
+	
+    img.convertTo(img,CV_32FC3);
+	for(int c=0;c<=2;++c)
         {
-            for (unsigned j = 0, volChl = INPUT_H * INPUT_W; j < volChl; ++j) {
-                data[i * volImg + c * volChl + j] = (2.0 / 255.0) * float(ppms[i].buffer[j * INPUT_CHANNELS + c])-1.0;
-            }
+            for(int row=0;row<INPUT_W;row++)
+            {
+			for(int col=0;col<INPUT_H;col++,++num)
+			{
+				data.push_back(img.at<Vec3f>(row,col)[c]);
+				//data.push_back(img.at<Vec3f>(row,col)[1]);
+			    //data.push_back(img.at<Vec3f>(row,col)[0]);
+				//cout<<data[num]<<",";
+			    //cout<<img.at<Vec3f>(row,col)[0]<<","<<img.at<Vec3f>(row,col)[1]<<","<<img.at<Vec3f>(row,col)[2]<<endl;
+			}
+		}
+ 
         }
     }
+	
+
     std::cout << " Data Size  " << data.size() << std::endl;
     std::cout<<"Data prepared..."<<endl;
     
     std::cout << "Model deserializing" << std::endl;
     IRuntime* runtime = createInferRuntime(gLogger);
     assert(runtime != nullptr);
-    ICudaEngine* engine = runtime->deserializeCudaEngine(trtModelStream->data(), trtModelStream->size());
+    ICudaEngine* engine = runtime->deserializeCudaEngine(trtModelStream->data(), trtModelStream->size(),nullptr);
     assert(engine != nullptr);
     trtModelStream->destroy();
     IExecutionContext* context = engine->createExecutionContext();
     assert(context != nullptr);
     
     /*data should be flattened*/
-    doInference(*context, &data[0], &networkOut[0], N);
+    doInference(*context, &data[0], &networkOut[0], BatchSize);
     std::cout<<"Inference uploaded..."<<endl;
     
     for(int i = 0; i < N; ++i)
     {
-        float* outdata = &networkOut[0] + i * INPUT_W * INPUT_H * INPUT_CHANNELS;
-        Mat position_map(INPUT_W, INPUT_H, CV_64FC3, outdata,CV_AUTOSTEP);
-        //cv::imwrite(save_path + ppm[i].fileName, position_map);
-        /*
-        ppm = ppms[i];
-        string filename = ppm.fileName;
-        std::ofstream outfile(save_path + filename, std::ofstream::binary);
-        assert(!outfile.fail());
-        outfile << "Output save..." << "\n" << ppm.w << " " << ppm.h << "\n" << ppm.max << "\n";
-        outfile.write(reinterpret_cast<char*>(ppm.buffer), ppm.w * ppm.h * 3);
-        */
+        float* outdata=nullptr;
+		outdata =&networkOut[0];//+ i * INPUT_W * INPUT_H * INPUT_CHANNELS;
+        vector<float> mydata;
+	//std::vector<samples_common::PPM<INPUT_CHANNELS, INPUT_W, INPUT_H>> pm(N);
+	    //pm = &networkOut[0];
+		for (int i=0;i<256*256*3;++i)
+		{
+
+			mydata.push_back(outdata[i]*256*1.1);
+		}
+	Mat position_map(INPUT_W, INPUT_H, CV_32FC3);
+	int n=0;
+        	for(int row=0;row<256;row++)
+        	{
+            	
+				for(int col=0;col<256;col++)
+           	 	{
+					position_map.at<Vec3f>(row,col)[2]= mydata[n];++n;
+					position_map.at<Vec3f>(row,col)[1] = mydata[n];++n;
+					position_map.at<Vec3f>(row,col)[0] = mydata[n];++n;
+          	  	}
+       		 }
+
+	
+        cv::imwrite(save_path + "/"+imgname, position_map);
+    
     }
     
     /* we need to keep the memory created by the parser */
     parser->destroy();
     
-    execute(*engine);
+    //execute(*engine);
     engine->destroy();
-    shutdownProtobufLibrary();
+    //shutdownProtobufLibrary();
+    return 0;
 }

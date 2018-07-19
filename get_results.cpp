@@ -45,7 +45,7 @@ vector<vector<float>> get_landmark(Mat pos, vector<float> uv_kpt_ind_0,vector<fl
     {
         landmark[i][0] = pos.at<Vec3d>(uv_kpt_ind_1[i],uv_kpt_ind_0[i])[2];
         landmark[i][1] = pos.at<Vec3d>(uv_kpt_ind_1[i],uv_kpt_ind_0[i])[1];
-        landmark[i][2] = pos.at<Vec3d>(uv_kpt_ind_1[i],uv_kpt_ind_0[i])[0];
+        landmark[i][2] = pos.at<Vec3d>(uv_kpt_ind_1[i],uv_kpt_ind_0[i])[1];
     }
     
     return landmark;
@@ -53,7 +53,7 @@ vector<vector<float>> get_landmark(Mat pos, vector<float> uv_kpt_ind_0,vector<fl
 
 vector<float> estimate_pose(vector<vector<float>> vertices)
 {
-    string path = "samples/landmark/landmark/canonical_vertices.txt";
+    string path = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/canonical_vertices.txt";
     Mat canonical_vertices_homo;
     Mat canonical_vertices = Mat::zeros(131601/3, 3, CV_32FC1);
     getFromText(path, canonical_vertices);

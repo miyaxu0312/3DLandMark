@@ -67,12 +67,13 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
     string  suffix = ".*.jpg";
     Mat img,similar_img;
     files = get_all_files(filePath, suffix);
+    cout<<"----------"<<files.size()<<endl;
     for(uint i=0;i<files.size();++i)
     {
         split_result = my_split(files[i],"/");
         string name = split_result[split_result.size()-1];
         img = imread(files[i], CV_LOAD_IMAGE_UNCHANGED); // 读取每一张图片
-        similar_img = Mat::zeros(resolution,resolution, img.type());
+        similar_img = Mat::zeros(resolution,resolution, CV_32FC3);
         box = get_box(boxPath, name);
         int old_size = (box[1] - box[0] + box[3] - box[2])/2;
         int size = old_size * 1.58;
@@ -85,20 +86,24 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
         float temp_dest[3][2] = {{0,0},{0,float(resolution-1)},{float(resolution-1), 0}};
         Mat destMat(3,2,CV_32F,temp_dest);
         Mat affine_mat = getAffineTransform(srcMat, destMat);
-        img = img/255.;
-
+        img.convertTo(img,CV_32FC3);
+	img = img/255.;
+	//img.convertTo(img,CV_32FC3);
         Mat affine_mat_inv;
         invertAffineTransform(affine_mat, affine_mat_inv);
         
-        warpAffine(img, similar_img, affine_mat, similar_img.size());
+        warpAffine(img, similar_img, affine_mat,  similar_img.size());
         /*get the save name*/
-        split_result = my_split(name,".");
-        cout<<split_result[0];
-	string save_name = split_result[0]+".ppm";     
+        //split_result = my_split(name,".");
+        //cout<<split_result[0];
+	    //string save_name = split_result[0]+".jpg";     
         /*save pre-processed image for the network*/
-        imwrite(savePath+"/"+save_name,similar_img);
+        imwrite(savePath+"/" + name,similar_img);
+	//for(int i=0;i<256;i++)
+		//for(int j=0;j<256;j++)
+			//cout<<similar_img.at<Vec3f>(i,j)[0]<<","<<similar_img.at<Vec3f>(i,j)[1]<<","<<similar_img.at<Vec3f>(i,j)[2]<<","<<endl;
         cout<<"----------Pre-process Completed----------"<<endl;
-        inference(savePath, netOutPath); //use tensorRT to get the pure postion map
+        inference(savePath, netOutPath,similar_img,name); //use tensorRT to get the pure postion map
         cout<<"----------Network Completed----------"<<endl;
         /*get landmark result*/
         post_process(netOutPath, name, postPath,faceIndex, uv_kpt_ind, resolution, affine_mat, affine_mat_inv);

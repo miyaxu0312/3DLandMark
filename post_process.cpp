@@ -37,12 +37,12 @@ void post_process(string filePath, string name, string save_path, string faceInd
     Mat pos(resolution,resolution,CV_8UC3);
    
     string tmp;
-    //filePath = "/Users/xyx/Desktop/landmark/landmark/network_output";
+    filePath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/network_output";
     img = imread(filePath+"/"+name, IMREAD_UNCHANGED); // 读取每一张图片
     cout<<"----------img: "<<name<<" loaded---------"<<endl;
-    string ori_path = "samples/landmark/landmark/crop_image";
-    string crop_path = "samples/landmark/landmark/image";
-    Mat ori_img = imread(crop_path+"/"+name, IMREAD_UNCHANGED);
+    string ori_path = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/image";
+    string crop_path = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/crop_image";
+    Mat ori_img = imread(ori_path+"/"+name, IMREAD_UNCHANGED);
     Mat cropped_vertices(resolution*resolution,3,img.type()), cropped_vertices_T(3,resolution*resolution,img.type());
     
     cropped_vertices = img.reshape(1, resolution*resolution);
@@ -129,7 +129,7 @@ void post_process(string filePath, string name, string save_path, string faceInd
     plot_landmark(ori_img, name, landmark);
     vector<float> pose = estimate_pose(all_vertices);
     cout<<"----------estimate pose Completed----------"<<endl;
-    ofstream outfile("samples/landmark/landmark/pose.txt", ios::app);
+    ofstream outfile("/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/pose.txt", ios::app);
     outfile<<"name:"<<name<<"\n";
     vector<float>::iterator iter;
     outfile<<"pose: ";

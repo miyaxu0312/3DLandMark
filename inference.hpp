@@ -1,3 +1,4 @@
+//
 // inference.hpp
 //  landmark
 //
@@ -20,6 +21,9 @@
 #include <chrono>
 #include <cstdlib>
 #include <cudnn.h>
+#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <utility>
 #include "common.h"
 #include "NvUffParser.h"
@@ -39,5 +43,5 @@ calculateBindingBufferSizes(const ICudaEngine& engine, int nbBindings, int batch
 ICudaEngine* loadModelAndCreateEngine(const char* uffFile, int maxBatchsize, IUffParser* parser, IHostMemory*& trtModelStream);
 void doInference(IExecutionContext& context, float* inputData, float* outputData, int batchSize);
 void readImage(const std::string& filename, uint8_t* buffer);
-void inference(std::string image_path, std::string save_path);
+int inference(std::string image_path, std::string save_path, cv::Mat img, std::string name);
 #endif /* inference_hpp */
