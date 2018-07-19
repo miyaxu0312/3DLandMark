@@ -28,7 +28,7 @@ int main(int argc, const char * argv[]) {
     string ImagePath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/image";
     string netOutPath="/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/network_output";
     string postPath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/post";
-    string boxPath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/box.txt";
+    string boxPath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/box_api.txt";
     string faceIndex = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/face_ind.txt";
     string uv_kpt_ind = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/uv_kpt_ind.txt";
     string savePath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/crop_image";

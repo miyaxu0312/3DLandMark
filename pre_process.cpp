@@ -78,6 +78,13 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
         int old_size = (box[1] - box[0] + box[3] - box[2])/2;
         int size = old_size * 1.58;
         float center_x=0.0, center_y=0.0;
+		//box[0] = box[0] + old_size * 0.05;
+		//box[1] = box[1] + old_size*0.1;
+		//box[2] =  box[2] - old_size*0.14;
+		//box[3] =  box[3] + old_size*0.19;
+		box[3] = box[3]- old_size * 0.14;
+		box[1] = box[1] - old_size * 0.03;
+		box[0] = box[0]-old_size * 0.04;
         center_x = box[1] - (box[1] - box[0]) / 2.0;
         center_y = box[3] - (box[3] - box[2]) / 2.0 + old_size * 0.14;
        
