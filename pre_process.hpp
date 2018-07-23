@@ -12,7 +12,7 @@
 #include <string>
 #include <iostream>
 using namespace std;
-
+using namespace cv;
 struct Affine_Matrix
 {
     string name;
