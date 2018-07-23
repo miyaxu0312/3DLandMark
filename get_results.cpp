@@ -51,44 +51,42 @@ vector<vector<float>> get_landmark(Mat pos, vector<float> uv_kpt_ind_0,vector<fl
     return landmark;
 }
 
-vector<float> estimate_pose(vector<vector<float>> vertices)
+vector<float> estimate_pose(vector<vector<float>> vertices, string canonical_vertices_path)
 {
-    string path = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/canonical_vertices.txt";
     Mat canonical_vertices_homo;
     Mat canonical_vertices = Mat::zeros(131601/3, 3, CV_32FC1);
-    getFromText(path, canonical_vertices);
+    getFromText(canonical_vertices_path, canonical_vertices);
     
     Mat ones_mat(131601/3,1,canonical_vertices.type(),Scalar(1));
     ones_mat.convertTo(ones_mat, CV_32F);
     hconcat(canonical_vertices, ones_mat, canonical_vertices_homo);
-    //cout<<ones_mat;
-    //cout<<canonical_vertices_homo;
+   
     Mat canonical_vertices_homo_T, vertices_T;
-    CvMat *canonical_vertices_homo_T_pointer=cvCreateMat(43867, 4,CV_32FC1);
-    CvMat *vertices_T_pointer=cvCreateMat(43867, 3,CV_32FC1);
+    CvMat *canonical_vertices_homo_T_pointer=cvCreateMat(43867, 4, CV_32FC1);
+    CvMat *vertices_T_pointer=cvCreateMat(43867, 3, CV_32FC1);
     CvMat *P_pointer=cvCreateMat(4, 3,CV_32FC1);
     
     cvSetData(canonical_vertices_homo_T_pointer, canonical_vertices_homo.data, CV_AUTOSTEP);
-    //cvSetData(vertices_T_pointer, vertices.data(), CV_AUTOSTEP);
-    for (int i=0;i<43867;i++)
+  
+    for (int i = 0; i < 43867; i++)
     {
-        for(int j=0;j<3;j++)
+        for(int j = 0; j < 3; j++)
         {
             cvmSet(vertices_T_pointer, i, j, vertices[i][j]);
         }
     }
-    //cout<<vertices.data();
+  
     cvSolve(canonical_vertices_homo_T_pointer,vertices_T_pointer, P_pointer);
     
     Mat P(P_pointer->rows,P_pointer->cols,P_pointer->type,P_pointer->data.fl);
     Mat P_T;
     transpose(P, P_T);
-    //cout<<P_T;
+  
     Mat rotation_matrix = P2sRt(P_T);
     cout<<"-------P2sRt completed-------"<<endl;
     vector<float> pose = matrix2angle(rotation_matrix);
     cout<<"-------matrix2angle completed-------"<<endl;
-    //save pos
+   
     return pose;
 }
 
@@ -106,13 +104,17 @@ Mat P2sRt(Mat P)
     P_row1.colRange(0, 3).copyTo(R2);
     Mat r1 = R1 / norm(R1);
     Mat r2 = R2 / norm(R2);
+    
     CvMat *r1_pointer=cvCreateMat(1, 3,CV_32FC1);
     cvSetData(r1_pointer, r1.data, CV_AUTOSTEP);
+    
     CvMat *r2_pointer=cvCreateMat(1, 3,CV_32FC1);
     cvSetData(r2_pointer, r2.data, CV_AUTOSTEP);
+    
     CvMat *r3_pointer=cvCreateMat(1, 3,CV_32FC1);
     cvCrossProduct(r1_pointer,r2_pointer,r3_pointer);
-    Mat r3(r3_pointer->rows,r3_pointer->cols,r3_pointer->type,r3_pointer->data.fl);
+    
+    Mat r3(r3_pointer->rows,r3_pointer->cols, r3_pointer->type, r3_pointer->data.fl);
     vconcat(r1, r2, R);
     vconcat(R, r3, R);
     return R;
@@ -125,7 +127,7 @@ vector<float> matrix2angle(Mat R)
     float x,y,z;
     if (R.at<float>(2,0) != 1 || R.at<float>(2,0) != -1)
     {
-        x =asin(R.at<float>(2,0));
+        x = asin(R.at<float>(2,0));
         y = atan2(R.at<float>(2,1)/cos(x), R.at<float>(2,2)/cos(x));
         z = atan2(R.at<float>(1,0)/cos(x), R.at<float>(0,0)/cos(x));
     }
@@ -134,7 +136,7 @@ vector<float> matrix2angle(Mat R)
         if (R.at<float>(2,0) == -1)
         {
             x = M_PI / 2;
-            y = z +atan2(-R.at<float>(0,1), -R.at<float>(0,2));
+            y = z + atan2(-R.at<float>(0,1), -R.at<float>(0,2));
         }
     }
     pose_angle.push_back(x);
