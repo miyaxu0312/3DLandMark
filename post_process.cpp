@@ -29,7 +29,7 @@
 using namespace std;
 using namespace cv;
 
-void post_process(string ori_path, string filePath, string save_path, string pose_save, string faceIndex, string uv_kpt_ind_path, int resolution, vector<Affine_Matrix> &affine_matrix)
+void post_process(string ori_path, string filePath, string save_path, string pose_save, string canonical_vertices_path, string faceIndex, string uv_kpt_ind_path, int resolution, vector<Affine_Matrix> &affine_matrix)
 {
     vector<string> files;
     vector<string> split_result;
@@ -136,7 +136,7 @@ void post_process(string ori_path, string filePath, string save_path, string pos
         vector<vector<float>> landmark = get_landmark(pos2, uv_kpt_ind1, uv_kpt_ind2);
         //get landmark
         plot_landmark(ori_img, name, landmark);
-        vector<float> pose = estimate_pose(all_vertices);
+        vector<float> pose = estimate_pose(all_vertices, canonical_vertices_path);
         //estimate pose 
         ofstream outfile(pose_save, ios::app);
         outfile<<"name:"<<name<<"\n";
