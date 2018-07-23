@@ -36,7 +36,12 @@ void plot_landmark(Mat img, string name, vector<vector<float>> kpt)
         line(image, center1, center2, Scalar(0,255,0));
     }
     //imshow("Landmark",image);
-    imwrite("/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/plot_kpt/"+name, image);
+    string path = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/plot_kpt";
+    if (access(path,6)==-1)
+    {
+        mkdir(path);
+    }
+    imwrite(path + "/" + name, image);
     cout<<"-----plot-kpt-completed-----"<<endl;
 }
 
