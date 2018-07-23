@@ -34,14 +34,11 @@ void post_process(string ori_path, string filePath, string save_path, string pos
     vector<string> files;
     vector<string> split_result;
     vector<float> face_ind;
-    //vector<float> uv_kpt_ind1,uv_kpt_ind2;
     Mat img, ori_img, z, vertices_T, stacked_vertices, affine_mat_stack;
     Mat pos(resolution,resolution,CV_8UC3);
-   // Mat affine_mat, affine_mat_inv;
     string name;
     string  suffix = ".*.jpg";
     files = get_all_files(filePath, suffix);
-    cout<<"--e---image num:-----"<<files.size()<<endl;
     for(int i=0;i<files.size();++i)
     {
         string tmp;
@@ -50,12 +47,12 @@ void post_process(string ori_path, string filePath, string save_path, string pos
         split_result = my_split(files[i],"/");
         name = split_result[split_result.size()-1]; //获取图片名
         Mat affine_mat,affine_mat_inv;
-        vector<Affine_Matrix>::iterator iter1;
-        for(iter1 = affine_matrix.begin(); iter1!= affine_matrix.end(); ++iter1)
+        vector<Affine_Matrix>::iterator mat_iter;
+        for(mat_iter = affine_matrix.begin(); mat_iter!= affine_matrix.end(); ++mat_iter)
         {
-            if((*iter1).name == name)
+            if((*mat_iter).name == name)
             {
-                affine_mat =  (*iter1).affine_mat;
+                affine_mat =  (*mat_iter).affine_mat;
                 invertAffineTransform(affine_mat, affine_mat_inv);
                 isfind = true;
             }
@@ -81,9 +78,8 @@ void post_process(string ori_path, string filePath, string save_path, string pos
         ones_mat.copyTo(cropped_vertices_T.row(2));
         
         cropped_vertices_T.convertTo(cropped_vertices_T, affine_mat.type());
-        Mat vertices;
-        
-        vertices =  affine_mat_inv * cropped_vertices_T;
+       
+        Mat vertices =  affine_mat_inv * cropped_vertices_T;
         z.convertTo(z, vertices.type());
         
         vconcat(vertices.rowRange(0, 2), z, stacked_vertices);
@@ -102,7 +98,8 @@ void post_process(string ori_path, string filePath, string save_path, string pos
             
         }
         imwrite(save_path+"/"+name,pos2);
-        cout<<"----------position map saved---------"<<endl;
+	    
+        //position map save
         ifstream f;
         f.open(faceIndex);
         assert(f.is_open());
@@ -114,7 +111,7 @@ void post_process(string ori_path, string filePath, string save_path, string pos
             iss >> num;
             face_ind.push_back(num);
         }
-        cout<<"----------face index data loaded---------"<<endl;
+        //face index data load
         f.close();
         
         f.open(uv_kpt_ind_path);
@@ -122,8 +119,8 @@ void post_process(string ori_path, string filePath, string save_path, string pos
         getline(f, tmp);
         vector<string> all_uv = my_split(tmp, " ");
         vector<string>::iterator uv_iter;
-		int k=1;
-		vector<float> uv_kpt_ind1,uv_kpt_ind2;
+	int k=1;
+	vector<float> uv_kpt_ind1,uv_kpt_ind2;
         for (uv_iter=all_uv.begin();uv_iter!=all_uv.end();++uv_iter,++k)
         {
             istringstream iss(*uv_iter);
@@ -134,14 +131,14 @@ void post_process(string ori_path, string filePath, string save_path, string pos
             else if(k>68 && k<=68*2)
                 uv_kpt_ind2.push_back(num);
         }
-        cout<<"----------kpt index data loaded---------"<<endl;
+        //kpt index data
         f.close();
         vector<vector<float>> all_vertices = get_vertices(pos2, face_ind, resolution);
         vector<vector<float>> landmark = get_landmark(pos2, uv_kpt_ind1, uv_kpt_ind2);
-        cout<<"----------get landmark Completed----------"<<endl;
+        //get landmark
         plot_landmark(ori_img, name, landmark);
         vector<float> pose = estimate_pose(all_vertices);
-        cout<<"----------estimate pose Completed----------"<<endl;
+        //estimate pose 
         ofstream outfile(pose_save, ios::app);
         outfile<<"name:"<<name<<"\n";
         vector<float>::iterator iter;
