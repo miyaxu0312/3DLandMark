@@ -24,6 +24,8 @@
 #include <fstream>
 #include <io.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <dirent.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
