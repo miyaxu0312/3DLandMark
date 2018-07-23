@@ -23,6 +23,7 @@
 #include <vector>
 #include <fstream>
 #include <io.h>
+#include <unistd.h>
 #include <dirent.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
