@@ -103,7 +103,7 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
         
         warpAffine(img, similar_img, affine_mat,  similar_img.size());
         /*save pre-processed image for the network*/
-	if (access(savePath,6)==-1)
+	if (_access(savePath,6)==-1)
    	{
     	 	mkdir(savePath);
     	}
