@@ -19,6 +19,7 @@
 #include <string>
 #include <string.h>
 #include <io.h>
+#include <unistd.h>
 #include <vector>
 #include <regex>
 #include <cassert>
