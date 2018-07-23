@@ -108,7 +108,7 @@ void post_process(string ori_path, string filePath, string save_path, string pos
 	    
         ifstream f;
         f.open(faceIndex);
-        if（!f)
+        if(!f)
 	{
 	    cerr<<"-----face index file do not exist!-----"<<endl;
 	    exit(1);
@@ -125,7 +125,7 @@ void post_process(string ori_path, string filePath, string save_path, string pos
         f.close();
         
         f.open(uv_kpt_ind_path);
-        if（!f)
+        if (!f)
 	{
 		cerr<<"-----uv kpt index file do not exist!-----"<<endl;
 		exit(1);
