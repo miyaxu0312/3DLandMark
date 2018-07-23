@@ -11,11 +11,8 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
-#include <opencv2/opencv.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
 using namespace std;
-using namespace cv;
+
 struct Affine_Matrix
 {
     string name;
