@@ -22,6 +22,7 @@
 #include <string.h>
 #include <vector>
 #include <fstream>
+#include <io.h>
 #include <dirent.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
