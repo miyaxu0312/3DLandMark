@@ -44,7 +44,7 @@ int main(int argc, const char * argv[]) {
     cout<<"----------Pre-process Completed----------"<<endl;
     inference(savePath, netOutPath, affine_matrix); //use tensorRT network
     cout<<"----------Network Completed----------"<<endl;
-    post_process(ImagePath, netOutPath, postPath, pose_save, canonical_vertices, faceIndex, uv_kpt_ind, resolution, affine_matrix, );
+    post_process(ImagePath, netOutPath, postPath, pose_save, canonical_vertices, faceIndex, uv_kpt_ind, resolution, affine_matrix);
     cout<<"----------Post-process Completed----------"<<endl;
    // waitKey();
     return 0;
