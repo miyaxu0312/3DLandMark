@@ -201,8 +201,8 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
             }
             total /= run_num;
             std::cout << "Average over " << run_num << " runs is " << total << " ms." << std::endl;
-			tmpdata = &outputData[0] + run*INPUT_W*INPUT_H*INPUT_CHANNELS;
-			CHECK(cudaMemcpyAsync(tmpdata, buffers[outputIndex], memSize, cudaMemcpyDeviceToHost));
+	    tmpdata = &outputData[0] + run*INPUT_W*INPUT_H*INPUT_CHANNELS;
+            CHECK(cudaMemcpyAsync(tmpdata, buffers[outputIndex], memSize, cudaMemcpyDeviceToHost));
        }
     }
     /*get the output data*/
@@ -319,7 +319,7 @@ int inference(std::string image_path, std::string save_path, vector<Affine_Matri
             }
          }
         tmpname = img_name[i];
-	if (_access(save_path,6) == -1)
+	if (access(save_path,6) == -1)
    	{
     	 	mkdir(save_path);
     	}
