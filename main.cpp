@@ -36,12 +36,11 @@ int main(int argc, const char * argv[]) {
     string savePath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/crop_image";
     string pose_save = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/pose.txt";
     int resolution = 256;
-    int file_num = 6;
     /*pre-process the input image*/
     vector<Affine_Matrix> affine_matrix;
     pre_process(ImagePath, boxPath, netOutPath, postPath, uv_kpt_ind, faceIndex, savePath, resolution, affine_matrix);
     cout<<"----------Pre-process Completed----------"<<endl;
-    inference(savePath, netOutPath, affine_matrix); //use tensorRT
+    inference(savePath, netOutPath, affine_matrix); //use tensorRT network
     cout<<"----------Network Completed----------"<<endl;
     post_process(ImagePath, netOutPath, postPath,pose_save,faceIndex, uv_kpt_ind, resolution, affine_matrix);
     cout<<"----------Post-process Completed----------"<<endl;
