@@ -18,7 +18,7 @@
 #include <cuda_runtime_api.h>
 #include <fstream>
 #include <iostream>
-#include <direct.h>
+#include <dirent.h>
 #include <string>
 #include <sys/stat.h>
 #include <unordered_map>
