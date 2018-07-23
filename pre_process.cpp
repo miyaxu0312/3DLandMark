@@ -23,6 +23,8 @@
 #include <vector>
 #include <fstream>
 #include <dirent.h>
+#include <io.h>
+#include <direct.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -69,6 +71,11 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
     files = get_all_files(filePath, suffix);
     cout<<"-----image num:-----"<<files.size()<<endl;
     Affine_Matrix tmp_affine_mat;
+    if(files.size() == 0)
+    {
+	    cerr<<"-----no image data-----"<<endl;
+	    exit(1);
+    }
     for(int i=0;i<files.size();++i)
     {
         split_result = my_split(files[i],"/");
@@ -97,6 +104,10 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
         
         warpAffine(img, similar_img, affine_mat,  similar_img.size());
         /*save pre-processed image for the network*/
+	if (access(savePath,6)==-1)
+   	{
+    	 	mkdir(savePath);
+    	}
         imwrite(savePath+"/" + name,similar_img);
         tmp_affine_mat.name = name;
         tmp_affine_mat.affine_mat = affine_mat;
