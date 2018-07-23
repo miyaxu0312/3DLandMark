@@ -39,12 +39,12 @@ void post_process(string ori_path, string filePath, string save_path, string pos
     string name;
     string  suffix = ".*.jpg";
     files = get_all_files(filePath, suffix);
-    for(int i=0;i<files.size();++i)
+    for(int i=0; i<files.size(); ++i)
     {
         string tmp;
         bool isfind = false;
         img = imread(files[i], IMREAD_UNCHANGED); // 读取每一张图片
-        split_result = my_split(files[i],"/");
+        split_result = my_split(files[i], "/");
         name = split_result[split_result.size()-1]; //获取图片名
         Mat affine_mat,affine_mat_inv;
         vector<Affine_Matrix>::iterator mat_iter;
@@ -59,8 +59,7 @@ void post_process(string ori_path, string filePath, string save_path, string pos
         }
         if( !isfind )
             continue;
-        cout<<"----------img: "<<name<<" loaded---------"<<endl;
-        ori_img = imread(ori_path+"/"+name, IMREAD_UNCHANGED);    //加载原始图片，方便画landmark
+        ori_img = imread(ori_path + "/" + name, IMREAD_UNCHANGED);    //加载原始图片，方便画landmark
         Mat cropped_vertices(resolution*resolution,3,img.type()), cropped_vertices_T(3,resolution*resolution,img.type());
         
         cropped_vertices = img.reshape(1, resolution*resolution);
@@ -97,7 +96,7 @@ void post_process(string ori_path, string filePath, string save_path, string pos
             }
             
         }
-        imwrite(save_path+"/"+name,pos2);
+        imwrite(save_path + "/" + name,pos2);
 	    
         //position map save
         ifstream f;
@@ -119,16 +118,16 @@ void post_process(string ori_path, string filePath, string save_path, string pos
         getline(f, tmp);
         vector<string> all_uv = my_split(tmp, " ");
         vector<string>::iterator uv_iter;
-	int k=1;
+	int ind_num=1;
 	vector<float> uv_kpt_ind1,uv_kpt_ind2;
-        for (uv_iter=all_uv.begin();uv_iter!=all_uv.end();++uv_iter,++k)
+        for (uv_iter=all_uv.begin(); uv_iter!=all_uv.end(); ++uv_iter, ++ind_num)
         {
             istringstream iss(*uv_iter);
             float num;
             iss >> num;
-            if (k<=68 && k>0)
+            if (ind_num <= 68 && ind_num > 0)
                 uv_kpt_ind1.push_back(num);
-            else if(k>68 && k<=68*2)
+            else if(ind_num > 68 && ind_num <= 68*2)
                 uv_kpt_ind2.push_back(num);
         }
         //kpt index data
