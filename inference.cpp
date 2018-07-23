@@ -18,7 +18,6 @@
 #include <cuda_runtime_api.h>
 #include <fstream>
 #include <iostream>
-#include <io.h>
 #include <direct.h>
 #include <string>
 #include <sys/stat.h>
