@@ -32,10 +32,8 @@ vector<string> get_all_files(string path, string suffix)
     else{
         while((dirp = readdir(dp)) != NULL)
         {
-            //cout<<dirp->d_name<<endl;
             if(dirp->d_type == 8 && regex_match(dirp->d_name, reg_obj))
             {
-                //cout << dirp->d_name << endl;
                 string file_absolute_path = path.c_str();
                 file_absolute_path = file_absolute_path.append("/");
                 file_absolute_path = file_absolute_path.append(dirp->d_name);
@@ -56,7 +54,6 @@ vector<string> my_split(string my_str,string seperate)
     while(string::npos!=split_index)
     {
         result.push_back(my_str.substr(start,split_index-start));
-        //cout<<my_str.substr(start,split_index-start)<<endl;
         start = split_index+seperate.size();
         split_index = my_str.find(seperate,start);
     }
@@ -79,6 +76,11 @@ void getFromText(String nameStr, Mat &myMat)
 {
     ifstream myFaceFile;
     myFaceFile.open(nameStr);
+    if (!myFaceFile) 
+    {
+        cerr<<"-----face index file do not exist!-----"<<endl;
+        exit();
+    }
     vector<string> result(3);
     string tmp;
     int i=0,line = 0;
