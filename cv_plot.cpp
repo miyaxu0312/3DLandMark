@@ -38,7 +38,7 @@ void plot_landmark(Mat img, string name, vector<vector<float>> kpt)
     }
     //imshow("Landmark",image);
     string path = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/plot_kpt";
-    if (access(path,6)==-1)
+    if (access(path.c_str(),6)==-1)
     {
         mkdir(path);
     }
