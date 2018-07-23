@@ -18,6 +18,8 @@
 #include <sstream>
 #include <string>
 #include <string.h>
+#include <io.h>
+#include <direct.h>
 #include <vector>
 #include <regex>
 #include <cassert>
@@ -96,9 +98,12 @@ void post_process(string ori_path, string filePath, string save_path, string pos
             }
             
         }
+	if (access(save_path,6)==-1)
+    	{
+     	    mkdir(save_path);
+    	}
         imwrite(save_path + "/" + name,pos2);
 	    
-        //position map save
         ifstream f;
         f.open(faceIndex);
         if（!f)
