@@ -52,7 +52,6 @@ static const int BatchSize = 1;
 static const int INPUT_H = 256;
 static const int INPUT_W = 256;
 static const int INPUT_CHANNELS = 3;
-static const int iteration = 1;
 static const char*  OUTPUT_BLOB_NAME = "resfcn256/Conv2d_transpose_16/Sigmoid";
 static const char*  INPUT_BLOB_NAME = "Placeholder";
 
@@ -153,7 +152,7 @@ ICudaEngine* loadModelAndCreateEngine(const char* uffFile, int maxBatchSize,
     return engine;
 }
 
-void doInference(IExecutionContext& context, float* inputData, float* outputData, int batchSize, int run_num)
+void doInference(IExecutionContext& context, float* inputData, float* outputData, int batchSize, int run_num, int iteration)
 {
     const ICudaEngine& engine = context.getEngine();
     int nbBindings = engine.getNbBindings();
@@ -240,7 +239,8 @@ int inference(std::string image_path, std::string save_path, vector<Affine_Matri
     
     files = get_all_files(image_path, suffix);
     int N = files.size();
-    
+    int run_num = N;
+    int iteration = 1;
     /*read image from the folder*/
     vector<float> networkOut(N * INPUT_CHANNELS * INPUT_H * INPUT_W);
     vector<float> data;
@@ -288,7 +288,7 @@ int inference(std::string image_path, std::string save_path, vector<Affine_Matri
     assert(context != nullptr);
     
     /*data should be flattened*/
-    doInference(*context, &data[0], &networkOut[0], BatchSize, N);
+    doInference(*context, &data[0], &networkOut[0], BatchSize, run_num, iteration);
     std::cout<<"Inference uploaded..."<<endl;
     float* outdata=nullptr;
     
