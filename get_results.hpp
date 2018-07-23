@@ -17,7 +17,7 @@ using namespace cv;
 using namespace std;
 vector<vector<float>> get_vertices(Mat pos, vector<float> face_ind, int resolution);
 vector<vector<float>> get_landmark(Mat pos, vector<float> uv_kpt_ind_0, vector<float> uv_kpt_ind_1);
-vector<float> estimate_pose(vector<vector<float>> vertices);
+vector<float> estimate_pose(vector<vector<float>> vertices, string canonical_vertices_path);
 Mat P2sRt(Mat p);
 vector<float> matrix2angle(Mat p);
 #endif /* get_results_hpp */
