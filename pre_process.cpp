@@ -106,7 +106,7 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
         /*save pre-processed image for the network*/
 	if (access(savePath.c_str(),6)==-1)
    	{
-    	 	mkdir(savePath.c_str());
+    	 	mkdir(savePath.c_str(), S_IRWXU);
     	}
         imwrite(savePath+"/" + name,similar_img);
         tmp_affine_mat.name = name;
