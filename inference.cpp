@@ -18,6 +18,8 @@
 #include <cuda_runtime_api.h>
 #include <fstream>
 #include <iostream>
+#include <io.h>
+#include <direct.h>
 #include <string>
 #include <sys/stat.h>
 #include <unordered_map>
@@ -316,6 +318,10 @@ int inference(std::string image_path, std::string save_path, vector<Affine_Matri
             }
          }
         tmpname = img_name[i];
+	if (access(save_path,6) == -1)
+   	{
+    	 	mkdir(save_path);
+    	}
         cv::imwrite(save_path + "/"+ tmpname, position_map);
     }
     
