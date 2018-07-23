@@ -20,6 +20,7 @@
 #include <iostream>
 #include <dirent.h>
 #include <io.h>
+#include <unistd.h>
 #include <string>
 #include <sys/stat.h>
 #include <unordered_map>
