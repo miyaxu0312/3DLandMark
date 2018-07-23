@@ -98,7 +98,7 @@ void post_process(string ori_path, string filePath, string save_path, string pos
             }
             
         }
-	if (access(save_path,6)==-1)
+	if (access(save_path.c_str(),6)==-1)
     	{
      	    mkdir(save_path);
     	}
