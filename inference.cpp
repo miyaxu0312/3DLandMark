@@ -32,12 +32,11 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include "NvUtils.h"
-
+#include "common.h"
 using namespace nvuffparser;
 using namespace nvinfer1;
-
 using namespace std;
-#include "common.h"
+
 static Logger gLogger;
 static samples_common::Args args;
 #define MAX_WORKSPACE (1<<30)
@@ -54,7 +53,6 @@ static const int INPUT_H = 256;
 static const int INPUT_W = 256;
 static const int INPUT_CHANNELS = 3;
 static const int iteration = 1;
-static const int run_num = 6;
 static const char*  OUTPUT_BLOB_NAME = "resfcn256/Conv2d_transpose_16/Sigmoid";
 static const char*  INPUT_BLOB_NAME = "Placeholder";
 
@@ -155,7 +153,7 @@ ICudaEngine* loadModelAndCreateEngine(const char* uffFile, int maxBatchSize,
     return engine;
 }
 
-void doInference(IExecutionContext& context, float* inputData, float* outputData, int batchSize)
+void doInference(IExecutionContext& context, float* inputData, float* outputData, int batchSize, int run_num)
 {
     const ICudaEngine& engine = context.getEngine();
     int nbBindings = engine.getNbBindings();
@@ -219,7 +217,7 @@ int inference(std::string image_path, std::string save_path, vector<Affine_Matri
     vector<string> files;
     vector<string> split_result;
     string  suffix = ".*.jpg";
-	std::map<int,string> img_name;
+    std::map<int,string> img_name;
     Mat img,similar_img;
     string tmpname = " ";
     
@@ -251,39 +249,36 @@ int inference(std::string image_path, std::string save_path, vector<Affine_Matri
     
     for(int i = 0; i < N; ++i)
     {
-	    bool isfind = false;
+	bool isfind = false;
         split_result = my_split(files[i],"/");
         tmpname = split_result[split_result.size()-1];
         img_name.insert(pair<int, string>(i, tmpname));
-		vector<Affine_Matrix>::iterator iter;
-		for(iter = affine_matrix.begin(); iter!= affine_matrix.end(); ++iter)
-		{
+	vector<Affine_Matrix>::iterator iter;
+	for(iter = affine_matrix.begin(); iter!= affine_matrix.end(); ++iter)
+	{
 
-			if((*iter).name == tmpname)
-			{
-				img = (*iter).crop_img;
-				isfind = true;
-				continue;
-			}
-		}
-		img.convertTo(img, CV_32FC3);
-		if( !isfind )
-			continue;
+	    if((*iter).name == tmpname)
+	    {
+		img = (*iter).crop_img;
+		isfind = true;
+		continue;
+	    }
+	}
+	img.convertTo(img, CV_32FC3);
+	if( !isfind )
+	    continue;
         for(int c=0; c<INPUT_CHANNELS; ++c)
         {
             for(int row=0; row<INPUT_W; row++)
             {
                 for(int col=0; col<INPUT_H; col++, ++num)
                 {
-					data.push_back(img.at<Vec3f>(row,col)[c]);
+		    data.push_back(img.at<Vec3f>(row,col)[c]);
                 }
             }
         }
     }
 
-    //std::cout << " Data Size  " << data.size() << std::endl;
-    //std::cout<<"Data prepared..."<<endl;
-    //std::cout << "Model deserializing" << std::endl;
     IRuntime* runtime = createInferRuntime(gLogger);
     assert(runtime != nullptr);
     ICudaEngine* engine = runtime->deserializeCudaEngine(trtModelStream->data(), trtModelStream->size(),nullptr);
@@ -293,14 +288,14 @@ int inference(std::string image_path, std::string save_path, vector<Affine_Matri
     assert(context != nullptr);
     
     /*data should be flattened*/
-    doInference(*context, &data[0], &networkOut[0], BatchSize);
+    doInference(*context, &data[0], &networkOut[0], BatchSize, N);
     std::cout<<"Inference uploaded..."<<endl;
     float* outdata=nullptr;
     
     for(int i = 0; i < N; ++i)
     {
         Mat position_map(INPUT_W, INPUT_H, CV_32FC3);
-		outdata = &networkOut[0] + i * INPUT_W * INPUT_H * INPUT_CHANNELS;
+	outdata = &networkOut[0] + i * INPUT_W * INPUT_H * INPUT_CHANNELS;
         vector<float> mydata;
         for (int j=0; j<INPUT_W * INPUT_H * INPUT_CHANNELS; ++j)
         {
