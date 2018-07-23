@@ -319,7 +319,7 @@ int inference(std::string image_path, std::string save_path, vector<Affine_Matri
             }
          }
         tmpname = img_name[i];
-	if (access(save_path,6) == -1)
+	if (access(save_path.c_str(),6) == -1)
    	{
     	 	mkdir(save_path);
     	}
