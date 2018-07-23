@@ -88,9 +88,9 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
         
         float temp_src[3][2] = {{center_x-size/2, center_y-size/2},{center_x - size/2, center_y + size/2},{center_x+size/2, center_y-size/2}};
         
-        Mat srcMat(3,2,CV_32F,temp_src);
-        float temp_dest[3][2] = {{0,0},{0,float(resolution-1)},{float(resolution-1), 0}};
-        Mat destMat(3,2,CV_32F,temp_dest);
+        Mat srcMat(3, 2, CV_32F,temp_src);
+        float temp_dest[3][2] = {{0, 0},{0, static_cast<float>(resolution-1)},{static_cast<float>(resolution-1), 0}};
+        Mat destMat(3, 2, CV_32F,temp_dest);
         Mat affine_mat = getAffineTransform(srcMat, destMat);
         img.convertTo(img,CV_32FC3);
         img = img/255.;
