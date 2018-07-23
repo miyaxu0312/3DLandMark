@@ -18,7 +18,6 @@
 #include <sstream>
 #include <string>
 #include <string.h>
-#include <io.h>
 #include <direct.h>
 #include <vector>
 #include <regex>
