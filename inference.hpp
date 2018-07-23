@@ -37,7 +37,7 @@ void* createCudaBuffer(int64_t eltCount, nvinfer1::DataType dtype, int run, bool
 std::vector<std::pair<int64_t,nvinfer1::DataType>>
 calculateBindingBufferSizes(const ICudaEngine& engine, int nbBindings, int batchSize);
 ICudaEngine* loadModelAndCreateEngine(const char* uffFile, int maxBatchsize, IUffParser* parser, IHostMemory*& trtModelStream);
-void doInference(IExecutionContext& context, float* inputData, float* outputData, int batchSize);
+void doInference(IExecutionContext& context, float* inputData, float* outputData, int batchSize, int N);
 void readImage(const std::string& filename, uint8_t* buffer);
 int inference(std::string image_path, std::string save_path, vector<Affine_Matrix> &affine_matrix);
 #endif /* inference_hpp */
