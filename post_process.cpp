@@ -18,6 +18,8 @@
 #include <sstream>
 #include <string>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <io.h>
 #include <unistd.h>
 #include <vector>
