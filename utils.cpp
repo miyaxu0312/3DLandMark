@@ -79,7 +79,7 @@ void getFromText(String nameStr, Mat &myMat)
     if (!myFaceFile) 
     {
         cerr<<"-----face index file do not exist!-----"<<endl;
-        exit();
+        exit(1);
     }
     vector<string> result(3);
     string tmp;
