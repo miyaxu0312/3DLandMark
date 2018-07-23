@@ -184,7 +184,7 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
         for (int run = 0; run < run_num; run++)
         {
             /*create space for input and set the input data*/
-			tmpdata = &inputData[0] + run * INPUT_W *INPUT_H *INPUT_CHANNELS;
+	    tmpdata = &inputData[0] + run * INPUT_W *INPUT_H *INPUT_CHANNELS;
             buffers[bindingIdxInput] = safeCudaMalloc(bufferSizesInput.first * samples_common::getElementSize(bufferSizesInput.second));
             CHECK(cudaMemcpyAsync(buffers[inputIndex],tmpdata, batchSize * INPUT_CHANNELS * INPUT_W * INPUT_H * sizeof(float), cudaMemcpyHostToDevice));
             auto t_start = std::chrono::high_resolution_clock::now();
@@ -318,7 +318,7 @@ int inference(std::string image_path, std::string save_path, vector<Affine_Matri
             }
          }
         tmpname = img_name[i];
-	if (access(save_path,6) == -1)
+	if (_access(save_path,6) == -1)
    	{
     	 	mkdir(save_path);
     	}
