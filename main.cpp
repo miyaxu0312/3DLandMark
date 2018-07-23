@@ -27,15 +27,15 @@ using namespace cv;
 
 int main(int argc, const char * argv[]) {
     //读取图片文件夹下的jpg图片和box.txt中对应的裁剪框坐标，进行裁剪
-    string ImagePath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/image";
-    string netOutPath="/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/network_output";
-    string postPath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/post";
-    string boxPath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/box_api.txt";
-    string faceIndex = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/face_ind.txt";
-    string uv_kpt_ind = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/uv_kpt_ind.txt";
-    string savePath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/crop_image";
-    string pose_save = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/pose.txt";
-    string canonical_vertices = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/canonical_vertices.txt";
+    const string ImagePath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/image";
+    const string netOutPath="/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/network_output";
+    const string postPath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/post";
+    const string boxPath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/box_api.txt";
+    const string faceIndex = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/face_ind.txt";
+    const string uv_kpt_ind = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/uv_kpt_ind.txt";
+    const string savePath = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/crop_image";
+    const string pose_save = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/pose.txt";
+    const string canonical_vertices = "/workspace/run/xyx/TensorRT-4.0.1.6/samples/landmark_Vc-/canonical_vertices.txt";
     
     int resolution = 256;
     vector<Affine_Matrix> affine_matrix;
