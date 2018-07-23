@@ -13,6 +13,8 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <vector>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <math.h>
 #include <iostream>
 #include <fstream>
