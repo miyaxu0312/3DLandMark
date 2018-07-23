@@ -10,6 +10,7 @@
 #include "utils.hpp"
 #include <stdio.h>
 #include <string>
+#include <unistd.h>
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
