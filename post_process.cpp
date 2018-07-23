@@ -100,7 +100,7 @@ void post_process(string ori_path, string filePath, string save_path, string pos
         }
 	if (access(save_path.c_str(),6)==-1)
     	{
-     	    mkdir(save_path);
+     	    mkdir(save_path.c_str());
     	}
         imwrite(save_path + "/" + name,pos2);
 	    
