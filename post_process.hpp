@@ -13,5 +13,5 @@
 #include <iostream>
 #include "pre_process.hpp"
 using namespace std;
-void post_process(string ori_path, string filePath, string save_path, string pose_save, string faceIndex, string uv_kpt_ind, int resolution, vector<Affine_Matrix> &affine_matrix);
+void post_process(string ori_path, string filePath, string save_path, string pose_save, string canonical_vertices, string faceIndex, string uv_kpt_ind, int resolution, vector<Affine_Matrix> &affine_matrix);
 #endif /* post_process_hpp */
