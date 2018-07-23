@@ -74,16 +74,15 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
         split_result = my_split(files[i],"/");
         string name = split_result[split_result.size()-1];
         img = imread(files[i], CV_LOAD_IMAGE_UNCHANGED); // 读取每一张图片
-       // similar_img = Mat::zeros(resolution,resolution, CV_32FC3);
-	    Mat similar_img;
+      
+        Mat similar_img;
         box = get_box(boxPath, name);
         int old_size = (box[1] - box[0] + box[3] - box[2])/2;
         int size = old_size * 1.58;
         float center_x=0.0, center_y=0.0;
-		
-		box[3] = box[3]- old_size * 0.3;
-		box[1] = box[1] - old_size * 0.25;
-		box[0] = box[0] + old_size * 0.2;
+	box[3] = box[3]- old_size * 0.3;
+	box[1] = box[1] - old_size * 0.25;
+	box[0] = box[0] + old_size * 0.2;
         center_x = box[1] - (box[1] - box[0]) / 2.0;
         center_y = box[3] - (box[3] - box[2]) / 2.0 + old_size * 0.14;
         
@@ -101,9 +100,8 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
         imwrite(savePath+"/" + name,similar_img);
         tmp_affine_mat.name = name;
         tmp_affine_mat.affine_mat = affine_mat;
-		tmp_affine_mat.crop_img = similar_img;
+	tmp_affine_mat.crop_img = similar_img;
         affine_matrix.push_back(tmp_affine_mat);
-        cout<<"----------Pre-process Completed----------"<<endl;
     }
     
 }
