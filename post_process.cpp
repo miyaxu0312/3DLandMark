@@ -101,7 +101,11 @@ void post_process(string ori_path, string filePath, string save_path, string pos
         //position map save
         ifstream f;
         f.open(faceIndex);
-        assert(f.is_open());
+        if（!f)
+	{
+	    cerr<<"-----face index file do not exist!-----"<<endl;
+	    exit(1);
+	}
         
         while(getline(f, tmp))
         {
@@ -114,7 +118,11 @@ void post_process(string ori_path, string filePath, string save_path, string pos
         f.close();
         
         f.open(uv_kpt_ind_path);
-        assert(f.is_open());
+        if（!f)
+	{
+		cerr<<"-----uv kpt index file do not exist!-----"<<endl;
+		exit(1);
+	}
         getline(f, tmp);
         vector<string> all_uv = my_split(tmp, " ");
         vector<string>::iterator uv_iter;
