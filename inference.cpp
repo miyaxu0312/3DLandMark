@@ -9,6 +9,7 @@
 
 #include "inference.hpp"
 #include "utils.hpp"
+#include "pre_process.hpp"
 #include <algorithm>
 #include <cublas_v2.h>
 #include <cudnn.h>
@@ -53,7 +54,7 @@ static const int INPUT_H = 256;
 static const int INPUT_W = 256;
 static const int INPUT_CHANNELS = 3;
 static const int iteration = 1;
-static const int run_num = 1;
+static const int run_num = 6;
 static const char*  OUTPUT_BLOB_NAME = "resfcn256/Conv2d_transpose_16/Sigmoid";
 static const char*  INPUT_BLOB_NAME = "Placeholder";
 
@@ -70,6 +71,14 @@ void* safeCudaMalloc(size_t memSize)
     }
     return deviceMem;
 }
+
+std::string locateFile(const std::string& input)
+{
+	std::vector<std::string> dirs{
+		"data/landmark/"};
+	return locateFile(input, dirs);
+}
+
 
 std::vector<std::pair<int64_t, nvinfer1::DataType>>
 calculateBindingBufferSizes(const ICudaEngine& engine, int nbBindings, int batchSize)
@@ -169,15 +178,16 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
     auto bufferSizesInput = buffersSizes[bindingIdxInput];
     int inputIndex = engine.getBindingIndex(INPUT_BLOB_NAME);
     int outputIndex = engine.getBindingIndex(OUTPUT_BLOB_NAME);
-    
+    float *tmpdata;
     for (int i = 0; i < iteration; i++)
     {
         float total = 0, ms;
         for (int run = 0; run < run_num; run++)
         {
             /*create space for input and set the input data*/
+			tmpdata = &inputData[0] + run * INPUT_W *INPUT_H *INPUT_CHANNELS;
             buffers[bindingIdxInput] = safeCudaMalloc(bufferSizesInput.first * samples_common::getElementSize(bufferSizesInput.second));
-            CHECK(cudaMemcpyAsync(buffers[inputIndex], inputData, batchSize * INPUT_CHANNELS * INPUT_W * INPUT_H * sizeof(float), cudaMemcpyHostToDevice));
+            CHECK(cudaMemcpyAsync(buffers[inputIndex],tmpdata, batchSize * INPUT_CHANNELS * INPUT_W * INPUT_H * sizeof(float), cudaMemcpyHostToDevice));
             auto t_start = std::chrono::high_resolution_clock::now();
             context.execute(batchSize, &buffers[0]);
             auto t_end = std::chrono::high_resolution_clock::now();
@@ -191,24 +201,25 @@ void doInference(IExecutionContext& context, float* inputData, float* outputData
             }
             total /= run_num;
             std::cout << "Average over " << run_num << " runs is " << total << " ms." << std::endl;
+			tmpdata = &outputData[0] + run*INPUT_W*INPUT_H*INPUT_CHANNELS;
+			CHECK(cudaMemcpyAsync(tmpdata, buffers[outputIndex], memSize, cudaMemcpyDeviceToHost));
        }
     }
     /*get the output data*/
-    CHECK(cudaMemcpyAsync(outputData, buffers[outputIndex], memSize, cudaMemcpyDeviceToHost));
-    /*free space*/
-    for (int bindingIdx = 0; bindingIdx < nbBindings; ++bindingIdx)
-        if (!engine.bindingIsInput(bindingIdx))
-            CHECK(cudaFree(buffers[bindingIdx]));
+    //CHECK(cudaMemcpyAsync(outputData, buffers[outputIndex], memSize, cudaMemcpyDeviceToHost));
+    /*free space*/ 
+ 
+  CHECK(cudaFree(buffers[outputIndex]));
 }
 
 
 
-int inference(std::string image_path, std::string save_path)
+int inference(std::string image_path, std::string save_path, vector<Affine_Matrix> &affine_matrix)
 {
     vector<string> files;
     vector<string> split_result;
-    string  suffix = ".*.jpg | .*.png";
-    std:map<int,string> img_name;
+    string  suffix = ".*.jpg";
+	std::map<int,string> img_name;
     Mat img,similar_img;
     string tmpname = " ";
     
@@ -218,7 +229,7 @@ int inference(std::string image_path, std::string save_path)
     auto parser = createUffParser();
   
     /* Register tensorflow input */
-    parser->registerInput(INPUT_BLOB_NAME, Dims3(INPUT_CHANNELS, INPUT_W, INPUT_h), UffInputOrder::kNCHW);
+    parser->registerInput(INPUT_BLOB_NAME, Dims3(INPUT_CHANNELS, INPUT_W, INPUT_H), UffInputOrder::kNCHW);
     parser->registerOutput(OUTPUT_BLOB_NAME);
     
     IHostMemory* trtModelStream{nullptr};
@@ -229,7 +240,7 @@ int inference(std::string image_path, std::string save_path)
         RETURN_AND_LOG(EXIT_FAILURE, ERROR, "Model load failed...");
     tmpengine->destroy();
     
-    files = get_all_files(filePath, suffix);
+    files = get_all_files(image_path, suffix);
     int N = files.size();
     
     /*read image from the folder*/
@@ -240,18 +251,31 @@ int inference(std::string image_path, std::string save_path)
     
     for(int i = 0; i < N; ++i)
     {
-        img = imread(files[i], CV_LOAD_IMAGE_UNCHANGED);
-        img.convertTo(img,CV_32FC3);
+	    bool isfind = false;
         split_result = my_split(files[i],"/");
         tmpname = split_result[split_result.size()-1];
         img_name.insert(pair<int, string>(i, tmpname));
+		vector<Affine_Matrix>::iterator iter;
+		for(iter = affine_matrix.begin(); iter!= affine_matrix.end(); ++iter)
+		{
+
+			if((*iter).name == tmpname)
+			{
+				img = (*iter).crop_img;
+				isfind = true;
+				continue;
+			}
+		}
+		img.convertTo(img, CV_32FC3);
+		if( !isfind )
+			continue;
         for(int c=0; c<INPUT_CHANNELS; ++c)
         {
             for(int row=0; row<INPUT_W; row++)
             {
                 for(int col=0; col<INPUT_H; col++, ++num)
                 {
-                    data.push_back(img.at<Vec3f>(row,col)[c]);
+					data.push_back(img.at<Vec3f>(row,col)[c]);
                 }
             }
         }
@@ -270,7 +294,7 @@ int inference(std::string image_path, std::string save_path)
     
     /*data should be flattened*/
     doInference(*context, &data[0], &networkOut[0], BatchSize);
-    //std::cout<<"Inference uploaded..."<<endl;
+    std::cout<<"Inference uploaded..."<<endl;
     float* outdata=nullptr;
     
     for(int i = 0; i < N; ++i)
@@ -278,8 +302,7 @@ int inference(std::string image_path, std::string save_path)
         Mat position_map(INPUT_W, INPUT_H, CV_32FC3);
 		outdata = &networkOut[0] + i * INPUT_W * INPUT_H * INPUT_CHANNELS;
         vector<float> mydata;
-	
-        for (int j=0; j<INPUT_W * INPUE_H * INPUT_CHANNELS; ++j)
+        for (int j=0; j<INPUT_W * INPUT_H * INPUT_CHANNELS; ++j)
         {
             mydata.push_back(outdata[j] * INPUT_W * 1.1);
         }
@@ -297,7 +320,7 @@ int inference(std::string image_path, std::string save_path)
                 ++n;
             }
          }
-        tmpname = img_name.find(i);
+        tmpname = img_name[i];
         cv::imwrite(save_path + "/"+ tmpname, position_map);
     }
     

@@ -19,7 +19,8 @@ using namespace cv;
 struct Affine_Matrix
 {
     string name;
-    Mat affine_mat(2,3,CV_32F);
+    Mat affine_mat;
+	Mat crop_img;
 };
 
 void pre_process(string ImagePath, string boxPath, string netOutPath, string postPath, string uv_kpt_ind, string faceIndex, string savePath, int resolution, vector<Affine_Matrix> &affine_matrix);

@@ -1,4 +1,4 @@
-//
+
 //  pre_process.cpp
 //  landmark
 //
@@ -64,28 +64,29 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
     vector<string> files;
     vector<string> split_result;
     vector<int> box;
-    string  suffix = ".*.jpg | .*.png";
-    Mat img,similar_img;
+    string  suffix = ".*.jpg";
+    Mat img;
     files = get_all_files(filePath, suffix);
     cout<<"-----image num:-----"<<files.size()<<endl;
-    Affine_Matrix affine_mat;
+    Affine_Matrix tmp_affine_mat;
     for(int i=0;i<files.size();++i)
     {
         split_result = my_split(files[i],"/");
         string name = split_result[split_result.size()-1];
         img = imread(files[i], CV_LOAD_IMAGE_UNCHANGED); // 读取每一张图片
-        similar_img = Mat::zeros(resolution,resolution, CV_32FC3);
+       // similar_img = Mat::zeros(resolution,resolution, CV_32FC3);
+	    Mat similar_img;
         box = get_box(boxPath, name);
         int old_size = (box[1] - box[0] + box[3] - box[2])/2;
         int size = old_size * 1.58;
         float center_x=0.0, center_y=0.0;
 		
-		box[3] = box[3]- old_size * 0.14;
-		box[1] = box[1] - old_size * 0.03;
-		box[0] = box[0]-old_size * 0.04;
+		box[3] = box[3]- old_size * 0.3;
+		box[1] = box[1] - old_size * 0.25;
+		box[0] = box[0] + old_size * 0.2;
         center_x = box[1] - (box[1] - box[0]) / 2.0;
         center_y = box[3] - (box[3] - box[2]) / 2.0 + old_size * 0.14;
-       
+        
         float temp_src[3][2] = {{center_x-size/2, center_y-size/2},{center_x - size/2, center_y + size/2},{center_x+size/2, center_y-size/2}};
         
         Mat srcMat(3,2,CV_32F,temp_src);
@@ -98,14 +99,11 @@ void pre_process(string filePath, string boxPath, string netOutPath, string post
         warpAffine(img, similar_img, affine_mat,  similar_img.size());
         /*save pre-processed image for the network*/
         imwrite(savePath+"/" + name,similar_img);
-        affine_mat[i].name = name;
-        affine_mat[i].affine_mat = affine_mat;
-        affine_matrix.push_back(affine_mat);
+        tmp_affine_mat.name = name;
+        tmp_affine_mat.affine_mat = affine_mat;
+		tmp_affine_mat.crop_img = similar_img;
+        affine_matrix.push_back(tmp_affine_mat);
         cout<<"----------Pre-process Completed----------"<<endl;
-        //inference(savePath, netOutPath); //use tensorRT to get the pure postion map
-        cout<<"----------Network Completed----------"<<endl;
-        /*get landmark result*/
-        post_process(netOutPath, name, postPath,faceIndex, uv_kpt_ind, resolution, affine_matrix);
     }
     
 }

@@ -39,11 +39,11 @@ int main(int argc, const char * argv[]) {
     int file_num = 6;
     /*pre-process the input image*/
     vector<Affine_Matrix> affine_matrix;
-    pre_process(ImagePath, boxPath, netOutPath, postPath, uv_kpt_ind, faceIndex, savePath, resolution, &affine_matrix);
+    pre_process(ImagePath, boxPath, netOutPath, postPath, uv_kpt_ind, faceIndex, savePath, resolution, affine_matrix);
     cout<<"----------Pre-process Completed----------"<<endl;
-    //inference(savePath, netOutPath,similar_img,name); //use tensorRT
+    inference(savePath, netOutPath, affine_matrix); //use tensorRT
     cout<<"----------Network Completed----------"<<endl;
-    post_process(ImagePath, netOutPath, postPath,faceIndex, uv_kpt_ind, resolution, &affine_matrix);
+    post_process(ImagePath, netOutPath, postPath,pose_save,faceIndex, uv_kpt_ind, resolution, affine_matrix);
     cout<<"----------Post-process Completed----------"<<endl;
    // waitKey();
     return 0;

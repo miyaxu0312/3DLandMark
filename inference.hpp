@@ -29,6 +29,7 @@
 #include "NvUffParser.h"
 #include "NvCaffeParser.h"
 #include "NvInfer.h"
+#include "pre_process.hpp"
 using namespace nvuffparser;
 using namespace nvinfer1;
 void* safeCudaMalloc(size_t memSize);
@@ -38,5 +39,5 @@ calculateBindingBufferSizes(const ICudaEngine& engine, int nbBindings, int batch
 ICudaEngine* loadModelAndCreateEngine(const char* uffFile, int maxBatchsize, IUffParser* parser, IHostMemory*& trtModelStream);
 void doInference(IExecutionContext& context, float* inputData, float* outputData, int batchSize);
 void readImage(const std::string& filename, uint8_t* buffer);
-int inference(std::string image_path, std::string save_path);
+int inference(std::string image_path, std::string save_path, vector<Affine_Matrix> &affine_matrix);
 #endif /* inference_hpp */
